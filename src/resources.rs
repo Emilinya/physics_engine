@@ -6,10 +6,7 @@ use crate::texture;
 fn format_url(file_name: &str) -> reqwest::Url {
     let window = web_sys::window().unwrap();
     let location = window.location();
-    let mut origin = location.origin().unwrap();
-    if !origin.ends_with("learn-wgpu") {
-        origin = format!("{}/learn-wgpu", origin);
-    }
+    let origin = location.origin().unwrap();
     let base = reqwest::Url::parse(&format!("{}/", origin,)).unwrap();
     base.join(file_name).unwrap()
 }
@@ -38,6 +35,7 @@ pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
     cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
             let url = format_url(file_name);
+            log::warn!("Getting data from url {}", url);
             let data = reqwest::get(url)
                 .await?
                 .bytes()
