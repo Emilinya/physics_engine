@@ -9,6 +9,7 @@ use wasm_bindgen::prelude::*;
 mod model;
 mod state;
 mod camera;
+mod player;
 mod texture;
 mod instances;
 mod resources;
@@ -33,7 +34,6 @@ pub async fn run() {
         .build(&event_loop)
         .unwrap();
 
-    
     #[cfg(target_arch = "wasm32")]
     {
         // Winit prevents sizing with CSS, so we have to set

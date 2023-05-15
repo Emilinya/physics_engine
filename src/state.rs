@@ -3,29 +3,31 @@ use std::iter;
 use wgpu::util::DeviceExt;
 use winit::{event::*, window::Window};
 
-use crate::{model, camera, instances, texture, resources};
+use crate::{model, camera, instances, texture, player};
 
+use player::Player;
 use model::{DrawModel, Vertex};
 use instances::{Instance, InstanceRaw};
-use camera::{Camera, CameraUniform, CameraController};
+use camera::{Camera, CameraUniform};
 
 pub struct State {
+    pub size: winit::dpi::PhysicalSize<u32>,
+    render_pipeline: wgpu::RenderPipeline,
+    config: wgpu::SurfaceConfiguration,
+    camera_bind_group: wgpu::BindGroup,
+    depth_texture: texture::Texture,
+    #[allow(dead_code)]
+    camera_uniform: CameraUniform,
+    #[allow(dead_code)]
+    camera_buffer: wgpu::Buffer,
+    instances: Vec<Instance>,
+    obj_model: model::Model,
+    world_size: (f32, f32),
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
-    config: wgpu::SurfaceConfiguration,
-    pub size: winit::dpi::PhysicalSize<u32>,
-    render_pipeline: wgpu::RenderPipeline,
-    obj_model: model::Model,
     camera: Camera,
-    camera_controller: CameraController,
-    camera_uniform: CameraUniform,
-    camera_buffer: wgpu::Buffer,
-    camera_bind_group: wgpu::BindGroup,
-    instances: Vec<Instance>,
-    #[allow(dead_code)]
-    instance_buffer: wgpu::Buffer,
-    depth_texture: texture::Texture,
+    player: Player,
     window: Window,
 }
 
@@ -120,34 +122,18 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        let camera = Camera {
-            eye: (0.0, 0.000001, 10.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
-            up: cgmath::Vector3::unit_z(),
-            aspect: config.width as f32 / config.height as f32,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
-        };
-        let camera_controller = CameraController::new(0.2);
+        let camera = Camera::new(1.0, config.width as f32 / config.height as f32);
+        let world_size = camera.get_world_size();
 
-        let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
-
+        let camera_uniform = CameraUniform::from_camera(&camera);
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
             contents: bytemuck::cast_slice(&[camera_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let instances = instances::square_instances(11, 3.0);
-
-        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let instances = vec![Instance { position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0) }];
+        let player = Player::new(0, 0.1);
 
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -174,7 +160,7 @@ impl State {
         });
 
         log::warn!("Load model");
-        let obj_model = resources::create_model(
+        let obj_model = model::Model::from_square(
             "happy-tree.png",
             &device,
             &queue,
@@ -247,21 +233,21 @@ impl State {
         });
 
         Self {
+            size,
+            render_pipeline,
+            config,
+            camera_bind_group,
+            depth_texture,
+            camera_uniform,
+            camera_buffer,
+            instances,
+            obj_model,
+            world_size,
             surface,
             device,
             queue,
-            config,
-            size,
-            render_pipeline,
-            obj_model,
             camera,
-            camera_controller,
-            camera_buffer,
-            camera_bind_group,
-            camera_uniform,
-            instances,
-            instance_buffer,
-            depth_texture,
+            player,
             window,
         }
     }
@@ -272,27 +258,27 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.camera.aspect = self.config.width as f32 / self.config.height as f32;
+            self.camera.update_aspect(self.config.width as f32 / self.config.height as f32);
+            self.world_size = self.camera.get_world_size();
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.depth_texture =
-                texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
+            self.depth_texture = texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
         }
     }
     pub fn input(&mut self, event: &WindowEvent) -> bool {
-        self.camera_controller.process_events(event)
+        self.player.process_events(event)
     }
 
     pub fn update(&mut self) {
-        self.camera_controller.update_camera(&mut self.camera);
-        self.camera_uniform.update_view_proj(&self.camera);
-        self.queue.write_buffer(
-            &self.camera_buffer,
-            0,
-            bytemuck::cast_slice(&[self.camera_uniform]),
-        );
+        self.player.update(&mut self.instances, &self.world_size);
+        // self.camera_uniform.update_view_proj(&self.camera);
+        // self.queue.write_buffer(
+        //     &self.camera_buffer,
+        //     0,
+        //     bytemuck::cast_slice(&[self.camera_uniform]),
+        // );
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -306,6 +292,13 @@ impl State {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
+
+        let instance_data = self.instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let instance_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: bytemuck::cast_slice(&instance_data),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -333,7 +326,7 @@ impl State {
                 }),
             });
 
-            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.draw_model_instanced(
                 &self.obj_model,
