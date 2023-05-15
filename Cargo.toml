@@ -17,6 +17,7 @@ log = "0.4"
 tobj = { version = "3.2", features = ["async"]}
 wgpu = "0.15"
 winit = "0.27"
+getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.image]
 version = "0.24"
