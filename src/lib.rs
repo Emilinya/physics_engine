@@ -1,5 +1,5 @@
 use winit::{
-    event::*,
+    event::{Event, WindowEvent, ElementState, KeyboardInput, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
 };
 

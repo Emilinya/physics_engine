@@ -1,4 +1,4 @@
-use winit::event::*;
+use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 
 use crate::entity::Entity;
 
@@ -59,7 +59,7 @@ impl Player {
         }
     }
 
-    pub fn update(&self, entities: &mut Vec<Entity>, world_size: &(f32, f32)) {
+    pub fn update(&self, entities: &mut [Entity], world_size: &(f32, f32)) {
         let entity = &mut entities[self.entity_idx];
         entity.rotation += cgmath::Rad(0.01);
         if self.is_left_pressed {

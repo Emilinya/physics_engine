@@ -1,7 +1,7 @@
 use std::iter;
 
 use wgpu::util::DeviceExt;
-use winit::{event::*, window::Window};
+use winit::{event::WindowEvent, window::Window};
 
 use crate::{model, camera, entity, texture, player, entity_group};
 
@@ -84,8 +84,7 @@ impl State {
         // Srgb surfaces, you'll need to account for that when drawing to the frame.
         let surface_format = surface_caps.formats.iter()
             .copied()
-            .filter(|f| f.describe().srgb)
-            .next()
+            .find(|f| f.describe().srgb)
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
