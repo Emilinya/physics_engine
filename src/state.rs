@@ -145,7 +145,7 @@ impl State {
         }))];
         let entity_group = EntityGroup { entities, model };
 
-        let player = Player::new(Rc::clone(&entity_group.entities[0]), 0.1);
+        let player = Player::new(Rc::clone(&entity_group.entities[0]), 5.0);
 
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -274,14 +274,8 @@ impl State {
         self.player.process_events(event)
     }
 
-    pub fn update(&mut self) {
-        self.player.update(&self.world_size);
-        // self.camera_uniform.update_view_proj(&self.camera);
-        // self.queue.write_buffer(
-        //     &self.camera_buffer,
-        //     0,
-        //     bytemuck::cast_slice(&[self.camera_uniform]),
-        // );
+    pub fn update(&mut self, dt: instant::Duration) {
+        self.player.update(&self.world_size, &dt);
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {

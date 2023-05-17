@@ -6,7 +6,7 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn to_raw(&self) -> EntityModel {
+    pub fn get_model_matrix(&self) -> cgmath::Matrix3<f32> {
         // positive y is up, not down!
         let y_correction_matrix = cgmath::Matrix2::new(
             1.0, 0.0,
@@ -16,8 +16,13 @@ impl Entity {
         let translation_matrix = cgmath::Matrix3::from_translation(y_correction_matrix * self.position);
         let rotation_matrix = cgmath::Matrix3::from_angle_z(-self.rotation); // Why negative?
         let scale_matrix = cgmath::Matrix3::from_nonuniform_scale(self.width, self.height);
+
+        translation_matrix * rotation_matrix * scale_matrix
+    }
+
+    pub fn to_raw(&self) -> EntityModel {
         EntityModel {
-            model: (translation_matrix * rotation_matrix * scale_matrix).into(),
+            model: self.get_model_matrix().into(),
         }
     }
 }
