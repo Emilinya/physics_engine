@@ -3,12 +3,13 @@ use std::iter;
 use wgpu::util::DeviceExt;
 use winit::{event::*, window::Window};
 
-use crate::{model, camera, instances, texture, player};
+use crate::{model, camera, entity, texture, player, entity_group};
 
 use player::Player;
+use entity_group::EntityGroup;
 use model::{DrawModel, Vertex};
-use instances::{Instance, InstanceRaw};
 use camera::{Camera, CameraUniform};
+use entity::{Entity, EntityModel};
 
 pub struct State {
     pub size: winit::dpi::PhysicalSize<u32>,
@@ -20,8 +21,7 @@ pub struct State {
     camera_uniform: CameraUniform,
     #[allow(dead_code)]
     camera_buffer: wgpu::Buffer,
-    instances: Vec<Instance>,
-    obj_model: model::Model,
+    entity_group: EntityGroup,
     world_size: (f32, f32),
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -132,7 +132,16 @@ impl State {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let instances = vec![Instance { position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0) }];
+        log::warn!("Load model");
+        let model = model::Model::from_square(
+            "happy-tree.png",
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+        ).await.unwrap();
+        let entities = vec![Entity { position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 2.0, height: 1.0 }];
+        let entity_group = EntityGroup { entities, model };
+
         let player = Player::new(0, 0.1);
 
         let camera_bind_group_layout =
@@ -159,14 +168,6 @@ impl State {
             label: Some("camera_bind_group"),
         });
 
-        log::warn!("Load model");
-        let obj_model = model::Model::from_square(
-            "happy-tree.png",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        ).await.unwrap();
-
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader.wgsl"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
@@ -188,7 +189,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[model::ModelVertex::desc(), InstanceRaw::desc()],
+                buffers: &[model::ModelVertex::desc(), EntityModel::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -240,8 +241,7 @@ impl State {
             depth_texture,
             camera_uniform,
             camera_buffer,
-            instances,
-            obj_model,
+            entity_group,
             world_size,
             surface,
             device,
@@ -272,7 +272,7 @@ impl State {
     }
 
     pub fn update(&mut self) {
-        self.player.update(&mut self.instances, &self.world_size);
+        self.player.update(&mut self.entity_group.entities, &self.world_size);
         // self.camera_uniform.update_view_proj(&self.camera);
         // self.queue.write_buffer(
         //     &self.camera_buffer,
@@ -293,12 +293,7 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        let instance_data = self.instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        let instance_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let instance_buffer = self.entity_group.get_instance_buffer(&self.device);
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -329,8 +324,8 @@ impl State {
             render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.draw_model_instanced(
-                &self.obj_model,
-                0..self.instances.len() as u32,
+                &self.entity_group.model,
+                0..self.entity_group.entities.len() as u32,
                 &self.camera_bind_group,
             );
         }

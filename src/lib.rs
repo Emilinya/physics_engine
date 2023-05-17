@@ -10,9 +10,10 @@ mod model;
 mod state;
 mod camera;
 mod player;
+mod entity;
 mod texture;
-mod instances;
 mod resources;
+mod entity_group;
 
 use state::State;
 

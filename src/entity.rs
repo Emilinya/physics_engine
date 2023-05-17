@@ -1,10 +1,12 @@
-pub struct Instance {
+pub struct Entity {
     pub position: cgmath::Vector2<f32>,
     pub rotation: cgmath::Rad<f32>,
+    pub width: f32,
+    pub height: f32,
 }
 
-impl Instance {
-    pub fn to_raw(&self) -> InstanceRaw {
+impl Entity {
+    pub fn to_raw(&self) -> EntityModel {
         // positive y is up, not down!
         let y_correction_matrix = cgmath::Matrix2::new(
             1.0, 0.0,
@@ -12,28 +14,29 @@ impl Instance {
         );
 
         let translation_matrix = cgmath::Matrix3::from_translation(y_correction_matrix * self.position);
-        let rotation_matrix = cgmath::Matrix3::from_angle_z(-self.rotation);
-        InstanceRaw {
-            model: (translation_matrix * rotation_matrix).into(),
+        let rotation_matrix = cgmath::Matrix3::from_angle_z(-self.rotation); // Why negative?
+        let scale_matrix = cgmath::Matrix3::from_nonuniform_scale(self.width, self.height);
+        EntityModel {
+            model: (translation_matrix * rotation_matrix * scale_matrix).into(),
         }
     }
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct InstanceRaw {
+pub struct EntityModel {
     #[allow(dead_code)]
     model: [[f32; 3]; 3],
 }
 
-impl InstanceRaw {
+impl EntityModel {
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<EntityModel>() as wgpu::BufferAddress,
             // We need to switch from using a step mode of Vertex to Instance
             // This means that our shaders will only change to use the next
-            // instance when the shader starts processing a new instance
+            // Instance when the shader starts processing a new Instance
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {

@@ -1,9 +1,9 @@
 use winit::event::*;
 
-use crate::instances::Instance;
+use crate::entity::Entity;
 
 pub struct Player {
-    instance_idx: usize,
+    entity_idx: usize,
     speed: f32,
     is_up_pressed: bool,
     is_down_pressed: bool,
@@ -12,9 +12,9 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(instance_idx: usize, speed: f32) -> Self {
+    pub fn new(entity_idx: usize, speed: f32) -> Self {
         Self {
-            instance_idx,
+            entity_idx,
             speed,
             is_up_pressed: false,
             is_down_pressed: false,
@@ -59,23 +59,23 @@ impl Player {
         }
     }
 
-    pub fn update(&self, instances: &mut Vec<Instance>, world_size: &(f32, f32)) {
-        let instance = &mut instances[self.instance_idx];
-        instance.rotation += cgmath::Rad(0.01);
+    pub fn update(&self, entities: &mut Vec<Entity>, world_size: &(f32, f32)) {
+        let entity = &mut entities[self.entity_idx];
+        entity.rotation += cgmath::Rad(0.01);
         if self.is_left_pressed {
-            instance.position.x -= self.speed;
+            entity.position.x -= self.speed;
         }
         if self.is_right_pressed {
-            instance.position.x += self.speed;
+            entity.position.x += self.speed;
         }
         if self.is_down_pressed {
-            instance.position.y -= self.speed;
+            entity.position.y -= self.speed;
         }
         if self.is_up_pressed {
-            instance.position.y += self.speed;
+            entity.position.y += self.speed;
         }
 
-        instance.position.x = instance.position.x.clamp(-world_size.0 + 0.5, world_size.0 - 0.5);
-        instance.position.y = instance.position.y.clamp(-world_size.1 + 0.5, world_size.1 - 0.5);
+        entity.position.x = entity.position.x.clamp(-world_size.0 + entity.width / 2.0, world_size.0 - entity.width / 2.0);
+        entity.position.y = entity.position.y.clamp(-world_size.1 + entity.height / 2.0, world_size.1 - entity.height / 2.0);
     }
 }
