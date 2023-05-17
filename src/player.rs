@@ -1,9 +1,12 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 
 use crate::entity::Entity;
 
 pub struct Player {
-    entity_idx: usize,
+    entity: Rc<RefCell<Entity>>,
     speed: f32,
     is_up_pressed: bool,
     is_down_pressed: bool,
@@ -12,9 +15,9 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(entity_idx: usize, speed: f32) -> Self {
+    pub fn new(entity: Rc<RefCell<Entity>>, speed: f32) -> Self {
         Self {
-            entity_idx,
+            entity,
             speed,
             is_up_pressed: false,
             is_down_pressed: false,
@@ -59,23 +62,23 @@ impl Player {
         }
     }
 
-    pub fn update(&self, entities: &mut [Entity], world_size: &(f32, f32)) {
-        let entity = &mut entities[self.entity_idx];
-        entity.rotation += cgmath::Rad(0.01);
+    pub fn update(&self, world_size: &(f32, f32)) {
+        let mut entity_mutref = self.entity.borrow_mut();
+        entity_mutref.rotation += cgmath::Rad(0.01);
         if self.is_left_pressed {
-            entity.position.x -= self.speed;
+            entity_mutref.position.x -= self.speed;
         }
         if self.is_right_pressed {
-            entity.position.x += self.speed;
+            entity_mutref.position.x += self.speed;
         }
         if self.is_down_pressed {
-            entity.position.y -= self.speed;
+            entity_mutref.position.y -= self.speed;
         }
         if self.is_up_pressed {
-            entity.position.y += self.speed;
+            entity_mutref.position.y += self.speed;
         }
 
-        entity.position.x = entity.position.x.clamp(-world_size.0 + entity.width / 2.0, world_size.0 - entity.width / 2.0);
-        entity.position.y = entity.position.y.clamp(-world_size.1 + entity.height / 2.0, world_size.1 - entity.height / 2.0);
+        entity_mutref.position.x = entity_mutref.position.x.clamp(-world_size.0 + entity_mutref.width / 2.0, world_size.0 - entity_mutref.width / 2.0);
+        entity_mutref.position.y = entity_mutref.position.y.clamp(-world_size.1 + entity_mutref.height / 2.0, world_size.1 - entity_mutref.height / 2.0);
     }
 }

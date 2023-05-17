@@ -1,4 +1,6 @@
 use std::iter;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
@@ -138,10 +140,12 @@ impl State {
             &queue,
             &texture_bind_group_layout,
         ).await.unwrap();
-        let entities = vec![Entity { position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 2.0, height: 1.0 }];
+        let entities = vec![Rc::new(RefCell::new(Entity {
+            position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 2.0, height: 1.0
+        }))];
         let entity_group = EntityGroup { entities, model };
 
-        let player = Player::new(0, 0.1);
+        let player = Player::new(Rc::clone(&entity_group.entities[0]), 0.1);
 
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -271,7 +275,7 @@ impl State {
     }
 
     pub fn update(&mut self) {
-        self.player.update(&mut self.entity_group.entities, &self.world_size);
+        self.player.update(&self.world_size);
         // self.camera_uniform.update_view_proj(&self.camera);
         // self.queue.write_buffer(
         //     &self.camera_buffer,
