@@ -6,6 +6,7 @@ use winit::{
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
+mod shape;
 mod model;
 mod state;
 mod camera;

@@ -1,4 +1,7 @@
+use crate::shape;
+
 pub struct Entity {
+    pub shape: shape::Shape,
     pub position: cgmath::Vector2<f32>,
     pub rotation: cgmath::Rad<f32>,
     pub width: f32,

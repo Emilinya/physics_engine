@@ -2,6 +2,7 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 use crate::{texture, resources};
+use crate::shape::Shape;
 
 pub trait Vertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a>;
@@ -62,7 +63,8 @@ pub struct Model {
 }
 
 impl Model {
-    pub async fn from_square(
+    pub async fn from_shape(
+        shape: Shape,
         file_name: &str,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -84,17 +86,7 @@ impl Model {
             label: None,
         });
 
-        let vertices = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
-        let indices: [u32; 6] = [
-            0, 1, 2,
-            0, 2, 3,
-        ];
-
-        let model_vertices: Vec<ModelVertex> = vertices.into_iter().map(|pos| ModelVertex {
-            position: [pos[0] - 0.5, pos[1] - 0.5],
-            tex_coords: pos,
-            normal: [0.0, 0.0],
-        }).collect();
+        let (model_vertices, indices) = shape.get_model();
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("{:?} Vertex Buffer", file_name)),

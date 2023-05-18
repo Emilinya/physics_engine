@@ -5,8 +5,9 @@ use std::cell::RefCell;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{model, camera, entity, texture, player, entity_group};
+use crate::{model, camera, entity, texture, player, entity_group, shape};
 
+use shape::Shape;
 use player::Player;
 use entity_group::EntityGroup;
 use model::{DrawModel, Vertex};
@@ -134,14 +135,15 @@ impl State {
         });
 
         log::warn!("Load model");
-        let model = model::Model::from_square(
+        let model = model::Model::from_shape(
+            Shape::Circle,
             "happy-tree.png",
             &device,
             &queue,
             &texture_bind_group_layout,
         ).await.unwrap();
         let entities = vec![Rc::new(RefCell::new(Entity {
-            position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 2.0, height: 1.0
+            shape: Shape::Circle, position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 1.0, height: 1.0
         }))];
         let entity_group = EntityGroup { entities, model };
 
