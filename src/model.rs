@@ -58,6 +58,7 @@ pub struct Mesh {
 }
 
 pub struct Model {
+    shape: Shape,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
@@ -113,7 +114,11 @@ impl Model {
             material: 0,
         }];
 
-        Ok(Model { meshes, materials })
+        Ok(Model { shape, meshes, materials })
+    }
+
+    pub fn get_shape(&self) -> Shape {
+        self.shape
     }
 }
 

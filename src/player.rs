@@ -83,7 +83,7 @@ impl Player {
         }
 
         let entity_ref = self.entity.borrow();
-        let (top_right, bottom_left) = entity_ref.shape.clone().get_bounding_box(entity_ref);
+        let (top_right, bottom_left) = entity_ref.model.get_shape().get_bounding_box(entity_ref);
         let (width, height) = (top_right - bottom_left).into();
         let mut entity_mutref = self.entity.borrow_mut();
         entity_mutref.position.x = entity_mutref.position.x.clamp(-world_size.0 + width / 2.0, world_size.0 - width / 2.0);

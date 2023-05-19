@@ -8,7 +8,7 @@ use crate::entity::{Entity, EntityModel};
 
 pub struct EntityGroup {
     pub entities: Vec<Rc<RefCell<Entity>>>,
-    pub model: Model,
+    pub model: Rc<Model>,
 }
 
 impl EntityGroup {

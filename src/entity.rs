@@ -1,7 +1,9 @@
-use crate::shape;
+use std::rc::Rc;
+
+use crate::model;
 
 pub struct Entity {
-    pub shape: shape::Shape,
+    pub model: Rc<model::Model>,
     pub position: cgmath::Vector2<f32>,
     pub rotation: cgmath::Rad<f32>,
     pub width: f32,
