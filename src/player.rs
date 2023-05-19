@@ -83,10 +83,13 @@ impl Player {
         }
 
         let entity_ref = self.entity.borrow();
-        let (top_right, bottom_left) = entity_ref.model.get_shape().get_bounding_box(entity_ref);
+        let (top_right, bottom_left) = entity_ref.model.get_shape().get_bounding_box(&entity_ref);
         let (width, height) = (top_right - bottom_left).into();
+        let center_offset = entity_ref.position - (top_right + bottom_left) / 2.0;
+        drop(entity_ref);
+
         let mut entity_mutref = self.entity.borrow_mut();
-        entity_mutref.position.x = entity_mutref.position.x.clamp(-world_size.0 + width / 2.0, world_size.0 - width / 2.0);
-        entity_mutref.position.y = entity_mutref.position.y.clamp(-world_size.1 + height / 2.0, world_size.1 - height / 2.0);
+        entity_mutref.position.x = entity_mutref.position.x.clamp(-world_size.0 + center_offset.x + width / 2.0, world_size.0 + center_offset.x - width / 2.0);
+        entity_mutref.position.y = entity_mutref.position.y.clamp(-world_size.1 + center_offset.y + height / 2.0, world_size.1 + center_offset.y - height / 2.0);
     }
 }

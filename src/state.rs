@@ -143,7 +143,7 @@ impl State {
             &texture_bind_group_layout,
         ).await.unwrap());
         let entities = vec![Rc::new(RefCell::new(Entity {
-            model: model.clone(), position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 1.0, height: 1.0
+            model: model.clone(), position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 2.0, height: 1.0
         }))];
         let entity_group = EntityGroup { entities, model };
 

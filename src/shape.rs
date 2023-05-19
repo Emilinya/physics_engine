@@ -7,9 +7,13 @@ use crate::{model::ModelVertex, entity::Entity};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Shape {
+    #[allow(dead_code)]
     Square,
+    #[allow(dead_code)]
     Slope,
+    #[allow(dead_code)]
     NGon(usize),
+    #[allow(dead_code)]
     Circle,
 }
 
@@ -75,7 +79,7 @@ impl Shape {
         }
     }
 
-    pub fn get_bounding_box(&self, entity: Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
+    pub fn get_bounding_box(&self, entity: &Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         match self {
             Shape::Square => {
                 let (sin, cos ) = entity.rotation.sin_cos();
@@ -91,7 +95,7 @@ impl Shape {
             Shape::NGon(_) => {
                 let comp = |x: &f32, y: &f32| x.total_cmp(y);
 
-                let transformation_matrix = entity.get_model_matrix();
+                let transformation_matrix = entity.get_model_matrix(false);
                 let entity_vertices: Vec<cgmath::Vector2<f32>> = self.get_vertices().iter().map(|v| {
                     let vec3 = transformation_matrix * cgmath::Vector3::new(v[0], v[1], 1.0);
                     cgmath::Vector2::new(vec3.x, vec3.y)
@@ -111,12 +115,14 @@ impl Shape {
             Shape::Circle => {
                 let (bb_width, bb_height) = {
                     if (entity.width == entity.height) | (entity.rotation == cgmath::Rad(0.0)) {
+                        // shape is a circle, bounding box is very simple
                         (entity.width, entity.height)
                     } else {
+                        // shape is a rotated elipse, bounding box is complicated
                         let (sin, cos ) = entity.rotation.sin_cos();
+                        let bb_width = ((entity.width * cos).powi(2) + (entity.height * sin).powi(2)).sqrt();
+                        let bb_height = ((entity.width * sin).powi(2) + (entity.height * cos).powi(2)).sqrt();
         
-                        let bb_width = entity.width * cos.abs() + entity.height * sin.abs();
-                        let bb_height = entity.width * sin.abs() + entity.height * cos.abs();
                         (bb_width, bb_height)
                     }
                 };

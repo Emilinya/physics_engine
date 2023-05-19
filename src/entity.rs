@@ -11,15 +11,31 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn get_model_matrix(&self) -> cgmath::Matrix3<f32> {
+    pub fn get_model_matrix(&self, reverse_y: bool) -> cgmath::Matrix3<f32> {
         // positive y is up, not down!
-        let y_correction_matrix = cgmath::Matrix2::new(
-            1.0, 0.0,
-            0.0, -1.0,
-        );
+        let corrected_position = {
+            if reverse_y {
+                let y_correction_matrix = cgmath::Matrix2::new(
+                    1.0, 0.0,
+                    0.0, -1.0,
+                );
+                y_correction_matrix * self.position
+            } else {
+                self.position
+            }
+        };
 
-        let translation_matrix = cgmath::Matrix3::from_translation(y_correction_matrix * self.position);
-        let rotation_matrix = cgmath::Matrix3::from_angle_z(-self.rotation); // Why negative?
+        // why is this neccesary? because cos(-θ) = cos(θ), sin(-θ) = -sin(θ) => this also flips y
+        let corrected_rotation = {
+            if reverse_y {
+                -self.rotation
+            } else {
+                self.rotation
+            }
+        };
+
+        let translation_matrix = cgmath::Matrix3::from_translation(corrected_position);
+        let rotation_matrix = cgmath::Matrix3::from_angle_z(corrected_rotation);
         let scale_matrix = cgmath::Matrix3::from_nonuniform_scale(self.width, self.height);
 
         translation_matrix * rotation_matrix * scale_matrix
@@ -27,7 +43,7 @@ impl Entity {
 
     pub fn to_raw(&self) -> EntityModel {
         EntityModel {
-            model: self.get_model_matrix().into(),
+            model: self.get_model_matrix(true).into(),
         }
     }
 }
