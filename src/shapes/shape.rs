@@ -24,7 +24,6 @@ pub trait Shape {
         entity: &Ref<Entity>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         // this function might be expensive
-        let comp = |x: &f32, y: &f32| x.total_cmp(y);
 
         let transformation_matrix = entity.get_model_matrix(false);
         let entity_vertices: Vec<cgmath::Vector2<f32>> = self
@@ -39,10 +38,10 @@ pub trait Shape {
         let mut top_right = entity_vertices[0];
         let mut bottom_left = entity_vertices[0];
         for v in &entity_vertices[1..] {
-            top_right.x = max_by(top_right.x, v.x, comp);
-            top_right.y = max_by(top_right.y, v.y, comp);
-            bottom_left.x = min_by(bottom_left.x, v.x, comp);
-            bottom_left.y = min_by(bottom_left.y, v.y, comp);
+            top_right.x = max_by(top_right.x, v.x, f32::total_cmp);
+            top_right.y = max_by(top_right.y, v.y, f32::total_cmp);
+            bottom_left.x = min_by(bottom_left.x, v.x, f32::total_cmp);
+            bottom_left.y = min_by(bottom_left.y, v.y, f32::total_cmp);
         }
 
         (top_right, bottom_left)
