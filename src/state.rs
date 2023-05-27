@@ -1,21 +1,21 @@
+use std::cell::RefCell;
 use std::iter;
 use std::rc::Rc;
-use std::cell::RefCell;
 
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{rendering, entity, player, entity_group, shapes};
-use rendering::{model, texture, camera};
+use crate::{entity, entity_group, player, rendering, shapes};
+use rendering::{camera, model, texture};
 use shapes::{shape, spring};
 
-use shape::ShapeEnum;
-use spring::Spring;
-use player::Player;
+use camera::{Camera, CameraUniform};
+use entity::{Entity, EntityModel};
 use entity_group::EntityGroup;
 use model::{DrawModel, Vertex};
-use entity::{Entity, EntityModel};
-use camera::{Camera, CameraUniform};
+use player::Player;
+use shape::ShapeEnum;
+use spring::Spring;
 
 pub struct State {
     pub size: winit::dpi::PhysicalSize<u32>,
@@ -48,7 +48,7 @@ impl State {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
         });
-        
+
         // # Safety
         //
         // The surface needs to live as long as the window that created it.
@@ -88,7 +88,9 @@ impl State {
         // Shader code in this tutorial assumes an Srgb surface texture. Using a different
         // one will result all the colors comming out darker. If you want to support non
         // Srgb surfaces, you'll need to account for that when drawing to the frame.
-        let surface_format = surface_caps.formats.iter()
+        let surface_format = surface_caps
+            .formats
+            .iter()
             .copied()
             .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
@@ -146,7 +148,11 @@ impl State {
             &texture_bind_group_layout,
         ).await.unwrap());
         let entities = vec![Rc::new(RefCell::new(Entity {
-            model: model.clone(), position: cgmath::Vector2 {x: 0.0, y: 0.0}, rotation: cgmath::Rad(0.0), width: 3.0, height: 1.0
+            model: model.clone(),
+            position: cgmath::Vector2 { x: 0.0, y: 0.0 },
+            rotation: cgmath::Rad(0.0),
+            width: 3.0,
+            height: 1.0,
         }))];
         let entity_group = EntityGroup { entities, model };
 
@@ -266,13 +272,17 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.camera.update_aspect(self.config.width as f32 / self.config.height as f32);
+            self.camera.update_aspect(
+                self.config.width as f32 / self.config.height as f32
+            );
             self.world_size = self.camera.get_world_size();
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.depth_texture = texture::Texture::create_depth_texture(&self.device, &self.config, "depth_texture");
+            self.depth_texture = texture::Texture::create_depth_texture(
+                &self.device, &self.config, "depth_texture"
+            );
         }
     }
     pub fn input(&mut self, event: &WindowEvent) -> bool {

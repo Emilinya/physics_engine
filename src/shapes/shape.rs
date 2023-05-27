@@ -3,28 +3,38 @@ use core::cmp::{max_by, min_by};
 
 use cgmath::Angle;
 
-use crate::{rendering::model::ModelVertex, entity::Entity};
-use crate::shapes::{spring::Spring, ngon::NGon, circle::Circle, square::Square, slope::Slope};
+use crate::shapes::{circle::Circle, ngon::NGon, slope::Slope, spring::Spring, square::Square};
+use crate::{entity::Entity, rendering::model::ModelVertex};
 
 pub trait Shape {
     fn to_model_vertices(&self) -> Vec<ModelVertex> {
-        self.get_vertices().iter().map(|pos| ModelVertex {
-            position: *pos,
-            tex_coords: [pos[0] + 0.5, pos[1] + 0.5],
-            normal: [0.0, 0.0],
-        }).collect()
+        self.get_vertices()
+            .iter()
+            .map(|pos| ModelVertex {
+                position: *pos,
+                tex_coords: [pos[0] + 0.5, pos[1] + 0.5],
+                normal: [0.0, 0.0],
+            })
+            .collect()
     }
     fn get_vertices(&self) -> Vec<[f32; 2]>;
     fn get_model(&self) -> (Vec<ModelVertex>, Vec<u32>);
-    fn vertex_bounding_box(&self, entity: &Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
+    fn vertex_bounding_box(
+        &self,
+        entity: &Ref<Entity>,
+    ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         // this function might be expensive
         let comp = |x: &f32, y: &f32| x.total_cmp(y);
 
         let transformation_matrix = entity.get_model_matrix(false);
-        let entity_vertices: Vec<cgmath::Vector2<f32>> = self.get_vertices().iter().map(|v| {
-            let vec3 = transformation_matrix * cgmath::Vector3::new(v[0], v[1], 1.0);
-            cgmath::Vector2::new(vec3.x, vec3.y)
-        }).collect();
+        let entity_vertices: Vec<cgmath::Vector2<f32>> = self
+            .get_vertices()
+            .iter()
+            .map(|v| {
+                let vec3 = transformation_matrix * cgmath::Vector3::new(v[0], v[1], 1.0);
+                cgmath::Vector2::new(vec3.x, vec3.y)
+            })
+            .collect();
 
         let mut top_right = entity_vertices[0];
         let mut bottom_left = entity_vertices[0];
@@ -37,9 +47,12 @@ pub trait Shape {
 
         (top_right, bottom_left)
     }
-    fn get_bounding_box(&self, entity: &Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
+    fn get_bounding_box(
+        &self,
+        entity: &Ref<Entity>,
+    ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         // bounding box of a rectangle
-        let (sin, cos ) = entity.rotation.sin_cos();
+        let (sin, cos) = entity.rotation.sin_cos();
 
         let bb_width = entity.width * cos.abs() + entity.height * sin.abs();
         let bb_height = entity.width * sin.abs() + entity.height * cos.abs();
@@ -75,7 +88,10 @@ impl ShapeEnum {
         }
     }
 
-    pub fn get_bounding_box(&self, entity: &Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
+    pub fn get_bounding_box(
+        &self,
+        entity: &Ref<Entity>,
+    ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         match self {
             ShapeEnum::NGon(ngon) => ngon.get_bounding_box(entity),
             ShapeEnum::Slope(slope) => slope.get_bounding_box(entity),

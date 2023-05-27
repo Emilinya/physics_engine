@@ -1,4 +1,4 @@
-pub mod model;
 pub mod camera;
-pub mod texture;
+pub mod model;
 pub mod resources;
+pub mod texture;

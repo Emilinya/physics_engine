@@ -13,7 +13,7 @@ pub struct NGon {
 
 impl NGon {
     pub fn new(point_count: usize) -> Self {
-        Self {point_count}
+        Self { point_count }
     }
 }
 
@@ -23,7 +23,7 @@ impl Shape for NGon {
 
         for i in 0..self.point_count {
             let (sin, cos) = cgmath::Deg(-((i * 360) as f32 / self.point_count as f32)).sin_cos();
-            points.push([0.5*cos, 0.5*sin]);
+            points.push([0.5 * cos, 0.5 * sin]);
         }
 
         points
@@ -42,7 +42,10 @@ impl Shape for NGon {
         (self.to_model_vertices(), indices)
     }
 
-    fn get_bounding_box(&self, entity: &Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
+    fn get_bounding_box(
+        &self,
+        entity: &Ref<Entity>,
+    ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         self.vertex_bounding_box(entity)
     }
 }

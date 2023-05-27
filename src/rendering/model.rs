@@ -1,7 +1,7 @@
 use std::ops::Range;
 use wgpu::util::DeviceExt;
 
-use crate::rendering::{texture, resources};
+use crate::rendering::{resources, texture};
 use crate::shapes::shape::ShapeEnum;
 
 pub trait Vertex {

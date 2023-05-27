@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 
@@ -89,7 +89,13 @@ impl Player {
         drop(entity_ref);
 
         let mut entity_mutref = self.entity.borrow_mut();
-        entity_mutref.position.x = entity_mutref.position.x.clamp(-world_size.0 + center_offset.x + width / 2.0, world_size.0 + center_offset.x - width / 2.0);
-        entity_mutref.position.y = entity_mutref.position.y.clamp(-world_size.1 + center_offset.y + height / 2.0, world_size.1 + center_offset.y - height / 2.0);
+        entity_mutref.position.x = entity_mutref.position.x.clamp(
+            -world_size.0 + center_offset.x + width / 2.0,
+            world_size.0 + center_offset.x - width / 2.0,
+        );
+        entity_mutref.position.y = entity_mutref.position.y.clamp(
+            -world_size.1 + center_offset.y + height / 2.0,
+            world_size.1 + center_offset.y - height / 2.0,
+        );
     }
 }

@@ -7,8 +7,7 @@ use crate::rendering::model::ModelVertex;
 use crate::shapes::{ngon::NGon, shape::Shape};
 
 #[derive(Debug, Clone, Copy)]
-pub struct Circle {
-}
+pub struct Circle {}
 
 impl Circle {
     const POINT_COUNT: usize = 50;
@@ -28,16 +27,23 @@ impl Shape for Circle {
         NGon::new(Self::POINT_COUNT).get_model()
     }
 
-    fn get_bounding_box(&self, entity: &Ref<Entity>) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
+    fn get_bounding_box(
+        &self,
+        entity: &Ref<Entity>,
+    ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         let (bb_width, bb_height) = {
             if (entity.width == entity.height) | (entity.rotation == cgmath::Rad(0.0)) {
                 // shape is a circle, bounding box is very simple
                 (entity.width, entity.height)
             } else {
                 // shape is a rotated elipse, bounding box is complicated
-                let (sin, cos ) = entity.rotation.sin_cos();
-                let bb_width = ((entity.width * cos).powi(2) + (entity.height * sin).powi(2)).sqrt();
-                let bb_height = ((entity.width * sin).powi(2) + (entity.height * cos).powi(2)).sqrt();
+                let (sin, cos) = entity.rotation.sin_cos();
+                let bb_width = (
+                    (entity.width * cos).powi(2) + (entity.height * sin).powi(2)
+                ).sqrt();
+                let bb_height = (
+                    (entity.width * sin).powi(2) + (entity.height * cos).powi(2)
+                ).sqrt();
 
                 (bb_width, bb_height)
             }
