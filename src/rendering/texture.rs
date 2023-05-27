@@ -1,6 +1,5 @@
 use anyhow::{Ok, Result};
 use image::GenericImageView;
-use std::num::NonZeroU32;
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -99,8 +98,8 @@ impl Texture {
             &rgba,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(4 * dimensions.0),
-                rows_per_image: NonZeroU32::new(dimensions.1),
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
             },
             size,
         );
@@ -159,8 +158,8 @@ impl Texture {
             &[color[0], color[1], color[2], 255],
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(4 * dimensions.0),
-                rows_per_image: NonZeroU32::new(dimensions.1),
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
             },
             size,
         );

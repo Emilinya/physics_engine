@@ -35,7 +35,8 @@ fn interpolate(x: f32, points: &Vec<(f32, f32)>) -> f32 {
         }
         p += l * points[i].1;
     }
-    return p;
+
+    p
 }
 
 fn curve2function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
@@ -59,7 +60,7 @@ fn curve2function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
         f(nx),
     ];
 
-    return interpolate(x, &points);
+    interpolate(x, &points)
 }
 
 #[derive(Debug, Clone, Copy)]
