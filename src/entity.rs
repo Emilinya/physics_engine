@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::model;
+use crate::rendering::model;
 
 pub struct Entity {
     pub model: Rc<model::Model>,

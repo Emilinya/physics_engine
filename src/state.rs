@@ -5,14 +5,17 @@ use std::cell::RefCell;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{model, camera, entity, texture, player, entity_group, shape};
+use crate::{rendering, entity, player, entity_group, shapes};
+use rendering::{model, texture, camera};
+use shapes::{shape, spring};
 
-use shape::Shape;
+use shape::ShapeEnum;
+use spring::Spring;
 use player::Player;
 use entity_group::EntityGroup;
 use model::{DrawModel, Vertex};
-use camera::{Camera, CameraUniform};
 use entity::{Entity, EntityModel};
+use camera::{Camera, CameraUniform};
 
 pub struct State {
     pub size: winit::dpi::PhysicalSize<u32>,
@@ -136,7 +139,7 @@ impl State {
 
         log::warn!("Load model");
         let model = Rc::new(model::Model::from_shape(
-            Shape::Spring,
+            ShapeEnum::Spring(Spring::new(20, 0.02)),
             "happy-tree.png",
             &device,
             &queue,

@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use wgpu::util::DeviceExt;
 
-use crate::model::Model;
+use crate::rendering::model::Model;
 use crate::entity::{Entity, EntityModel};
 
 pub struct EntityGroup {

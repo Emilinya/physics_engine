@@ -1,8 +1,8 @@
 use std::ops::Range;
 use wgpu::util::DeviceExt;
 
-use crate::{texture, resources};
-use crate::shape::Shape;
+use crate::rendering::{texture, resources};
+use crate::shapes::shape::ShapeEnum;
 
 pub trait Vertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a>;
@@ -58,14 +58,14 @@ pub struct Mesh {
 }
 
 pub struct Model {
-    shape: Shape,
+    shape: ShapeEnum,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
 
 impl Model {
     pub async fn from_shape(
-        shape: Shape,
+        shape: ShapeEnum,
         file_name: &str,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -117,7 +117,7 @@ impl Model {
         Ok(Model { shape, meshes, materials })
     }
 
-    pub fn get_shape(&self) -> Shape {
+    pub fn get_shape(&self) -> ShapeEnum {
         self.shape
     }
 }
