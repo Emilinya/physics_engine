@@ -1,40 +1,34 @@
-use std::cell::RefCell;
+use std::collections::HashMap;
 use std::iter;
-use std::rc::Rc;
 
+use cgmath::Vector2;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{entity, entity_group, player, rendering, shapes};
+use crate::{instance, rendering, shapes, ecs};
 use rendering::{camera, model, texture};
-use shapes::{shape, spring};
+use shapes::shape;
 
 use camera::{Camera, CameraUniform};
-use entity::{Entity, EntityModel};
-use entity_group::EntityGroup;
-use model::{DrawModel, Vertex};
-use player::Player;
+use instance::InstanceModel;
+use model::{Model, DrawModel, Vertex};
 use shape::ShapeEnum;
-use spring::Spring;
 
 pub struct State {
+    instance_map: HashMap<ShapeEnum, (Model, Vec<InstanceModel>)>,
     pub size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     config: wgpu::SurfaceConfiguration,
     camera_bind_group: wgpu::BindGroup,
     depth_texture: texture::Texture,
-    #[allow(dead_code)]
-    camera_uniform: CameraUniform,
-    #[allow(dead_code)]
-    camera_buffer: wgpu::Buffer,
-    entity_group: EntityGroup,
+    happy_tree_texture: Vec<u8>,
     world_size: (f32, f32),
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
     camera: Camera,
-    player: Player,
     window: Window,
+    ecs: ecs::Ecs,
 }
 
 impl State {
@@ -129,6 +123,18 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
+        // entity stuff
+        let instance_map: HashMap<ShapeEnum, (Model, Vec<InstanceModel>)> = HashMap::new();
+        let mut ecs = ecs::Ecs::new();
+        let happy_tree_texture = rendering::resources::load_binary("happy-tree.png").await.unwrap();
+        
+        let fixed_point = ecs.add_fixed_point(Vector2::new(0.0, 0.0));
+        let cube = ecs.add_cube(Vector2::new(2.0, 1.0), 0.5, 0.5);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 0.1, fixed_point, cube);
+
+        ecs.convert_to_player(cube, 0.5);
+
+        // camera stuff
         let camera = Camera::new(1.0, config.width as f32 / config.height as f32);
         let world_size = camera.get_world_size();
 
@@ -138,25 +144,6 @@ impl State {
             contents: bytemuck::cast_slice(&[camera_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-
-        log::warn!("Load model");
-        let model = Rc::new(model::Model::from_shape(
-            ShapeEnum::Spring(Spring::new(20, 0.02)),
-            "happy-tree.png",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        ).await.unwrap());
-        let entities = vec![Rc::new(RefCell::new(Entity {
-            model: model.clone(),
-            position: cgmath::Vector2 { x: 0.0, y: 0.0 },
-            rotation: cgmath::Rad(0.0),
-            width: 3.0,
-            height: 1.0,
-        }))];
-        let entity_group = EntityGroup { entities, model };
-
-        let player = Player::new(Rc::clone(&entity_group.entities[0]), 5.0);
 
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -203,7 +190,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[model::ModelVertex::desc(), EntityModel::desc()],
+                buffers: &[model::ModelVertex::desc(), InstanceModel::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -248,21 +235,20 @@ impl State {
         });
 
         Self {
+            instance_map,
             size,
             render_pipeline,
             config,
             camera_bind_group,
             depth_texture,
-            camera_uniform,
-            camera_buffer,
-            entity_group,
+            happy_tree_texture,
             world_size,
             surface,
             device,
             queue,
             camera,
-            player,
             window,
+            ecs,
         }
     }
 
@@ -285,12 +271,33 @@ impl State {
             );
         }
     }
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        self.player.process_events(event)
+    pub fn input(&mut self, _: &WindowEvent) -> bool {
+        // self.player.process_events(event)
+        false
     }
 
     pub fn update(&mut self, dt: instant::Duration) {
-        self.player.update(&self.world_size, &dt);
+        let layout = self.render_pipeline.get_bind_group_layout(0);
+        ecs::player_movement_system(&self.ecs.player_components, &mut self.ecs.position_components, &dt);
+        ecs::connection_system(
+            &self.ecs.entities,
+            &self.ecs.connection_components,
+            &mut self.ecs.position_components,
+            &mut self.ecs.rotation_components,
+            &mut self.ecs.size_components,
+        );
+        ecs::instance_system(
+            &mut self.instance_map,
+            &self.ecs.entities,
+            &self.ecs.shape_components,
+            &self.ecs.position_components,
+            &self.ecs.rotation_components,
+            &self.ecs.size_components,
+            &self.device,
+            &self.queue,
+            &layout,
+            &self.happy_tree_texture
+        );
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -305,7 +312,16 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        let instance_buffer = self.entity_group.get_instance_buffer(&self.device);
+        let mut instance_buffers:Vec<wgpu::Buffer> = Vec::with_capacity(self.instance_map.len());
+        for (_, instances) in self.instance_map.values() {
+            instance_buffers.push(
+                self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Instance Buffer"),
+                    contents: bytemuck::cast_slice(instances),
+                    usage: wgpu::BufferUsages::VERTEX,
+                })
+            );
+        }
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -332,14 +348,17 @@ impl State {
                     stencil_ops: None,
                 }),
             });
-
-            render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.draw_model_instanced(
-                &self.entity_group.model,
-                0..self.entity_group.entities.len() as u32,
-                &self.camera_bind_group,
-            );
+
+            for (instance_buffer, (model, instances)) in core::iter::zip(instance_buffers.iter(), self.instance_map.values()) {
+                render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
+    
+                render_pass.draw_model_instanced(
+                    model,
+                    0..instances.len() as u32,
+                    &self.camera_bind_group,
+                );
+            }
         }
 
         self.queue.submit(iter::once(encoder.finish()));

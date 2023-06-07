@@ -2,11 +2,11 @@ use core::cell::Ref;
 
 use cgmath::Zero;
 
-use crate::entity::Entity;
+use crate::instance::Instance;
 use crate::rendering::model::ModelVertex;
 use crate::shapes::{shape::Shape, square::Square};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Slope {}
 
 impl Slope {
@@ -29,7 +29,7 @@ impl Shape for Slope {
 
     fn get_bounding_box(
         &self,
-        entity: &Ref<Entity>,
+        entity: &Ref<Instance>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         if entity.rotation.is_zero() {
             Square::new().get_bounding_box(entity)

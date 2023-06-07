@@ -2,11 +2,11 @@ use core::cell::Ref;
 
 use cgmath::Angle;
 
-use crate::entity::Entity;
+use crate::instance::Instance;
 use crate::rendering::model::ModelVertex;
 use crate::shapes::shape::Shape;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct NGon {
     point_count: usize,
 }
@@ -44,7 +44,7 @@ impl Shape for NGon {
 
     fn get_bounding_box(
         &self,
-        entity: &Ref<Entity>,
+        entity: &Ref<Instance>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         self.vertex_bounding_box(entity)
     }

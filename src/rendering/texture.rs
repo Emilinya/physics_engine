@@ -2,6 +2,7 @@ use anyhow::{Ok, Result};
 use image::GenericImageView;
 
 pub struct Texture {
+    pub name: String,
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
@@ -49,6 +50,7 @@ impl Texture {
             texture,
             view,
             sampler,
+            name: "depth".to_owned(),
         }
     }
 
@@ -119,6 +121,7 @@ impl Texture {
             texture,
             view,
             sampler,
+            name: "no_name".to_owned(),
         })
     }
 
@@ -179,6 +182,7 @@ impl Texture {
             texture,
             view,
             sampler,
+            name: format!("({}, {}, {})", color[0], color[1], color[2]),
         })
     }
 }

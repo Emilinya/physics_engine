@@ -6,12 +6,11 @@ use winit::{
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-mod entity;
-mod entity_group;
-mod player;
+mod instance;
 mod rendering;
 mod shapes;
 mod state;
+mod ecs;
 
 use state::State;
 

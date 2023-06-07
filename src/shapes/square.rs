@@ -1,7 +1,7 @@
 use crate::rendering::model::ModelVertex;
 use crate::shapes::shape::Shape;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Square {}
 
 impl Square {

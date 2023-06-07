@@ -1,7 +1,7 @@
 use std::ops::Range;
 use wgpu::util::DeviceExt;
 
-use crate::rendering::{resources, texture};
+use crate::rendering::texture::Texture;
 use crate::shapes::shape::ShapeEnum;
 
 pub trait Vertex {
@@ -45,7 +45,7 @@ impl Vertex for ModelVertex {
 
 pub struct Material {
     pub name: String,
-    pub diffuse_texture: texture::Texture,
+    pub diffuse_texture: Texture,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -58,30 +58,30 @@ pub struct Mesh {
 }
 
 pub struct Model {
-    shape: ShapeEnum,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
 
 impl Model {
-    pub async fn from_shape(
+    pub fn from_shape(
         shape: ShapeEnum,
-        file_name: &str,
+        texture_data: &[u8],
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         layout: &wgpu::BindGroupLayout,
     ) -> anyhow::Result<Model> {
-        let diffuse_texture = resources::load_texture(file_name, device, queue).await?;
+        let texture_name = "model texture".to_owned();
+        let texture = Texture::from_bytes(device, queue, texture_data, &texture_name).unwrap();
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                    resource: wgpu::BindingResource::TextureView(&texture.view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                    resource: wgpu::BindingResource::Sampler(&texture.sampler),
                 },
             ],
             label: None,
@@ -90,35 +90,31 @@ impl Model {
         let (model_vertices, indices) = shape.get_model();
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{:?} Vertex Buffer", file_name)),
+            label: Some(&format!("{:?} Vertex Buffer", texture.name)),
             contents: bytemuck::cast_slice(&model_vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("{:?} Index Buffer", file_name)),
+            label: Some(&format!("{:?} Index Buffer", texture.name)),
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
 
         let materials = vec![Material {
             name: "square".to_string(),
-            diffuse_texture,
+            diffuse_texture: texture,
             bind_group,
         }];
 
         let meshes = vec![Mesh {
-            name: file_name.to_string(),
+            name: texture_name,
             vertex_buffer,
             index_buffer,
             num_elements: indices.len() as u32,
             material: 0,
         }];
 
-        Ok(Model { shape, meshes, materials })
-    }
-
-    pub fn get_shape(&self) -> ShapeEnum {
-        self.shape
+        Ok(Model { meshes, materials })
     }
 }
 

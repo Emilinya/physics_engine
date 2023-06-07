@@ -1,6 +1,6 @@
 use cfg_if::cfg_if;
 
-use crate::rendering::texture;
+// use crate::rendering::texture;
 
 #[cfg(target_arch = "wasm32")]
 fn format_url(file_name: &str) -> reqwest::Url {
@@ -55,11 +55,11 @@ pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
     Ok(data)
 }
 
-pub async fn load_texture(
-    file_name: &str,
-    device: &wgpu::Device,
-    queue: &wgpu::Queue,
-) -> anyhow::Result<texture::Texture> {
-    let data = load_binary(file_name).await?;
-    texture::Texture::from_bytes(device, queue, &data, file_name)
-}
+// pub async fn load_texture(
+//     file_name: &str,
+//     device: &wgpu::Device,
+//     queue: &wgpu::Queue,
+// ) -> anyhow::Result<texture::Texture> {
+//     let data = load_binary(file_name).await?;
+//     texture::Texture::from_bytes(device, queue, &data, file_name)
+// }

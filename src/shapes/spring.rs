@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+use core::hash::{Hash, Hasher};
 
 use cgmath::Angle;
 
@@ -72,6 +73,26 @@ pub struct Spring {
 impl Spring {
     pub fn new(coil_count: u32, coil_diameter: f32) -> Self {
         Self {coil_count, coil_diameter}
+    }
+
+    fn canonicalize(&self) -> (u32, i64) {
+        // to be able to hash shape, we need to do something with our float.
+        // diameters smaller than 0.001 don't show up on screen anyway
+        (self.coil_count, (self.coil_diameter * 1000.0).round() as i64)
+    } 
+}
+
+impl PartialEq for Spring {
+    fn eq(&self, other: &Spring) -> bool {
+        self.canonicalize() == other.canonicalize()
+    }
+}
+
+impl Eq for Spring {}
+
+impl Hash for Spring {
+    fn hash<H>(&self, state: &mut H) where H: Hasher {
+        self.canonicalize().hash(state);
     }
 }
 

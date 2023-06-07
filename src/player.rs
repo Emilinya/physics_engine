@@ -3,10 +3,10 @@ use std::rc::Rc;
 
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
 
-use crate::entity::Entity;
+use crate::instance::Instance;
 
 pub struct Player {
-    entity: Rc<RefCell<Entity>>,
+    entity: Rc<RefCell<Instance>>,
     speed: f32,
     is_up_pressed: bool,
     is_down_pressed: bool,
@@ -15,7 +15,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(entity: Rc<RefCell<Entity>>, speed: f32) -> Self {
+    pub fn new(entity: Rc<RefCell<Instance>>, speed: f32) -> Self {
         Self {
             entity,
             speed,
@@ -82,20 +82,20 @@ impl Player {
             }
         }
 
-        let entity_ref = self.entity.borrow();
-        let (top_right, bottom_left) = entity_ref.model.get_shape().get_bounding_box(&entity_ref);
-        let (width, height) = (top_right - bottom_left).into();
-        let center_offset = entity_ref.position - (top_right + bottom_left) / 2.0;
-        drop(entity_ref);
+        // let entity_ref = self.entity.borrow();
+        // let (top_right, bottom_left) = entity_ref.model.get_shape().get_bounding_box(&entity_ref);
+        // let (width, height) = (top_right - bottom_left).into();
+        // let center_offset = entity_ref.position - (top_right + bottom_left) / 2.0;
+        // drop(entity_ref);
 
-        let mut entity_mutref = self.entity.borrow_mut();
-        entity_mutref.position.x = entity_mutref.position.x.clamp(
-            -world_size.0 + center_offset.x + width / 2.0,
-            world_size.0 + center_offset.x - width / 2.0,
-        );
-        entity_mutref.position.y = entity_mutref.position.y.clamp(
-            -world_size.1 + center_offset.y + height / 2.0,
-            world_size.1 + center_offset.y - height / 2.0,
-        );
+        // let mut entity_mutref = self.entity.borrow_mut();
+        // entity_mutref.position.x = entity_mutref.position.x.clamp(
+        //     -world_size.0 + center_offset.x + width / 2.0,
+        //     world_size.0 + center_offset.x - width / 2.0,
+        // );
+        // entity_mutref.position.y = entity_mutref.position.y.clamp(
+        //     -world_size.1 + center_offset.y + height / 2.0,
+        //     world_size.1 + center_offset.y - height / 2.0,
+        // );
     }
 }

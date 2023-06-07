@@ -4,7 +4,7 @@ use core::cmp::{max_by, min_by};
 use cgmath::Angle;
 
 use crate::shapes::{circle::Circle, ngon::NGon, slope::Slope, spring::Spring, square::Square};
-use crate::{entity::Entity, rendering::model::ModelVertex};
+use crate::{instance::Instance, rendering::model::ModelVertex};
 
 pub trait Shape {
     fn to_model_vertices(&self) -> Vec<ModelVertex> {
@@ -21,7 +21,7 @@ pub trait Shape {
     fn get_model(&self) -> (Vec<ModelVertex>, Vec<u32>);
     fn vertex_bounding_box(
         &self,
-        entity: &Ref<Entity>,
+        entity: &Ref<Instance>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         // this function might be expensive
 
@@ -48,7 +48,7 @@ pub trait Shape {
     }
     fn get_bounding_box(
         &self,
-        entity: &Ref<Entity>,
+        entity: &Ref<Instance>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         // bounding box of a rectangle
         let (sin, cos) = entity.rotation.sin_cos();
@@ -62,7 +62,7 @@ pub trait Shape {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ShapeEnum {
     #[allow(dead_code)]
     Square(Square),
@@ -87,9 +87,10 @@ impl ShapeEnum {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_bounding_box(
         &self,
-        entity: &Ref<Entity>,
+        entity: &Ref<Instance>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         match self {
             ShapeEnum::NGon(ngon) => ngon.get_bounding_box(entity),

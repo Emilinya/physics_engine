@@ -2,11 +2,11 @@ use core::cell::Ref;
 
 use cgmath::Angle;
 
-use crate::entity::Entity;
+use crate::instance::Instance;
 use crate::rendering::model::ModelVertex;
 use crate::shapes::{ngon::NGon, shape::Shape};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Circle {}
 
 impl Circle {
@@ -29,7 +29,7 @@ impl Shape for Circle {
 
     fn get_bounding_box(
         &self,
-        entity: &Ref<Entity>,
+        entity: &Ref<Instance>,
     ) -> (cgmath::Vector2<f32>, cgmath::Vector2<f32>) {
         let (bb_width, bb_height) = {
             if (entity.width == entity.height) | (entity.rotation == cgmath::Rad(0.0)) {

@@ -1,16 +1,11 @@
-use std::rc::Rc;
-
-use crate::rendering::model;
-
-pub struct Entity {
-    pub model: Rc<model::Model>,
+pub struct Instance {
     pub position: cgmath::Vector2<f32>,
     pub rotation: cgmath::Rad<f32>,
     pub width: f32,
     pub height: f32,
 }
 
-impl Entity {
+impl Instance {
     pub fn get_model_matrix(&self, reverse_y: bool) -> cgmath::Matrix3<f32> {
         // positive y is up, not down!
         let corrected_position = {
@@ -41,8 +36,8 @@ impl Entity {
         translation_matrix * rotation_matrix * scale_matrix
     }
 
-    pub fn to_raw(&self) -> EntityModel {
-        EntityModel {
+    pub fn to_raw(&self) -> InstanceModel {
+        InstanceModel {
             model: self.get_model_matrix(true).into(),
         }
     }
@@ -50,16 +45,16 @@ impl Entity {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct EntityModel {
+pub struct InstanceModel {
     #[allow(dead_code)]
     model: [[f32; 3]; 3],
 }
 
-impl EntityModel {
+impl InstanceModel {
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<EntityModel>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<InstanceModel>() as wgpu::BufferAddress,
             // We need to switch from using a step mode of Vertex to Instance
             // This means that our shaders will only change to use the next
             // Instance when the shader starts processing a new Instance
