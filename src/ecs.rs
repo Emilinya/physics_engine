@@ -1,12 +1,12 @@
-use std::cmp::Ordering;
-use std::collections::{HashMap, hash_map::Entry};
 use core::iter::zip;
+use std::cmp::Ordering;
+use std::collections::{hash_map::Entry, HashMap};
 
 use cgmath::InnerSpace;
 
-use crate::shapes::{shape::ShapeEnum, spring::Spring, square::Square};
+use crate::instance::{Instance, InstanceModel};
 use crate::rendering::model::Model;
-use crate::instance::{InstanceModel, Instance};
+use crate::shapes::{shape::ShapeEnum, spring::Spring, square::Square};
 
 pub struct PositionComponent {
     position: cgmath::Vector2<f32>,
@@ -34,12 +34,12 @@ pub struct PhysicsComponent {
 #[allow(dead_code)]
 pub struct SpringForceComponent {
     spring_constant: f32,
-    equilibrium_length: f32
+    equilibrium_length: f32,
 }
 
 pub struct ConnectionComponent {
     entity1: EntityIndex,
-    entity2: EntityIndex
+    entity2: EntityIndex,
 }
 
 type EntityIndex = usize;
@@ -51,7 +51,7 @@ macro_rules! create_ecs {
             empty_index: EntityIndex,
 
             $(pub $comp: Vec<Option<$comp_type>>,)*
-        
+
             pub entities: Vec<EntityIndex>,
         }
 
@@ -114,7 +114,7 @@ impl Ecs {
             panic!("Can't make non-existant entity a player! Got index {:?}, current empty index is {:?}", entity, self.empty_index);
         }
         if self.player_components[entity].is_none() {
-            self.player_components[entity] = Some(PlayerComponent {speed} );
+            self.player_components[entity] = Some(PlayerComponent { speed });
         }
     }
 
@@ -129,10 +129,19 @@ impl Ecs {
         self.empty_index - 1
     }
 
-    pub fn add_cube(&mut self, position: cgmath::Vector2<f32>, width: f32, height: f32) -> EntityIndex {
+    pub fn add_cube(
+        &mut self,
+        position: cgmath::Vector2<f32>,
+        width: f32,
+        height: f32,
+    ) -> EntityIndex {
         let position_component = PositionComponent { position };
-        let rotation_component = RotationComponent { rotation: cgmath::Rad(0.0) };
-        let shape_component = ShapeComponent { shape: ShapeEnum::Square(Square::new()) };
+        let rotation_component = RotationComponent {
+            rotation: cgmath::Rad(0.0),
+        };
+        let shape_component = ShapeComponent {
+            shape: ShapeEnum::Square(Square::new()),
+        };
         let size_component = SizeComponent { width, height };
 
         self.position_components.push(Some(position_component));
@@ -184,10 +193,7 @@ impl Ecs {
             spring_constant,
             equilibrium_length,
         };
-        let connection_component = ConnectionComponent {
-            entity1,
-            entity2,
-        };
+        let connection_component = ConnectionComponent { entity1, entity2 };
 
         self.spring_force_components.push(Some(spring_force_component));
         self.connection_components.push(Some(connection_component));
@@ -281,12 +287,8 @@ pub fn instance_system(
         .zip(position_components)
         .zip(rotation_components)
         .zip(size_components)
-        .map(|v| (
-            v.0.0.0.0, v.0.0.0.1, v.0.0.1, v.0.1, v.1
-        ))
-        .filter(|v| {
-            v.1.is_some() & v.2.is_some() & v.3.is_some() & v.4.is_some()
-        })
+        .map(|v| (v.0 .0 .0 .0, v.0 .0 .0 .1, v.0 .0 .1, v.0 .1, v.1))
+        .filter(|v| v.1.is_some() & v.2.is_some() & v.3.is_some() & v.4.is_some())
         .map(|v| {
             let entity = v.0;
             let shape = v.1.as_ref().unwrap();
@@ -295,7 +297,7 @@ pub fn instance_system(
                 position: v.2.as_ref().unwrap().position,
                 rotation: v.3.as_ref().unwrap().rotation,
                 width: size.width,
-                height: size.height
+                height: size.height,
             }.to_raw();
             (entity, shape, model)
         });
@@ -310,18 +312,10 @@ pub fn instance_system(
         let shape_enum = shape.shape;
         match instance_map.entry(shape_enum) {
             Entry::Vacant(e) => {
-                let model = Model::from_shape(
-                    shape_enum,
-                    texture_data,
-                    device,
-                    queue,
-                    layout,
-                ).unwrap();
+                let model = Model::from_shape(shape_enum, texture_data, device, queue, layout).unwrap();
                 e.insert((model, vec![instance_model]));
             }
-            Entry::Occupied(mut e) => {
-                e.get_mut().1.push(instance_model)
-            }
+            Entry::Occupied(mut e) => e.get_mut().1.push(instance_model),
         }
     }
 }

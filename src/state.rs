@@ -5,13 +5,13 @@ use cgmath::Vector2;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{instance, rendering, shapes, ecs};
+use crate::{ecs, instance, rendering, shapes};
 use rendering::{camera, model, texture};
 use shapes::shape;
 
 use camera::{Camera, CameraUniform};
 use instance::InstanceModel;
-use model::{Model, DrawModel, Vertex};
+use model::{DrawModel, Model, Vertex};
 use shape::ShapeEnum;
 
 pub struct State {
@@ -126,8 +126,10 @@ impl State {
         // entity stuff
         let instance_map: HashMap<ShapeEnum, (Model, Vec<InstanceModel>)> = HashMap::new();
         let mut ecs = ecs::Ecs::new();
-        let happy_tree_texture = rendering::resources::load_binary("happy-tree.png").await.unwrap();
-        
+        let happy_tree_texture = rendering::resources::load_binary("happy-tree.png")
+            .await
+            .unwrap();
+
         let fixed_point = ecs.add_fixed_point(Vector2::new(0.0, 0.0));
         let cube = ecs.add_cube(Vector2::new(2.0, 1.0), 0.5, 0.5);
         ecs.add_spring(20, 0.01, 0.2, 1.0, 0.1, fixed_point, cube);
@@ -278,7 +280,11 @@ impl State {
 
     pub fn update(&mut self, dt: instant::Duration) {
         let layout = self.render_pipeline.get_bind_group_layout(0);
-        ecs::player_movement_system(&self.ecs.player_components, &mut self.ecs.position_components, &dt);
+        ecs::player_movement_system(
+            &self.ecs.player_components,
+            &mut self.ecs.position_components,
+            &dt,
+        );
         ecs::connection_system(
             &self.ecs.entities,
             &self.ecs.connection_components,
@@ -296,7 +302,7 @@ impl State {
             &self.device,
             &self.queue,
             &layout,
-            &self.happy_tree_texture
+            &self.happy_tree_texture,
         );
     }
 
@@ -312,15 +318,15 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        let mut instance_buffers:Vec<wgpu::Buffer> = Vec::with_capacity(self.instance_map.len());
+        let mut instance_buffers: Vec<wgpu::Buffer> = Vec::with_capacity(self.instance_map.len());
         for (_, instances) in self.instance_map.values() {
-            instance_buffers.push(
-                self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            instance_buffers.push(self.device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
                     label: Some("Instance Buffer"),
                     contents: bytemuck::cast_slice(instances),
                     usage: wgpu::BufferUsages::VERTEX,
-                })
-            );
+                },
+            ));
         }
 
         {
@@ -350,9 +356,11 @@ impl State {
             });
             render_pass.set_pipeline(&self.render_pipeline);
 
-            for (instance_buffer, (model, instances)) in core::iter::zip(instance_buffers.iter(), self.instance_map.values()) {
+            for (instance_buffer, (model, instances)) in
+                core::iter::zip(instance_buffers.iter(), self.instance_map.values())
+            {
                 render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
-    
+
                 render_pass.draw_model_instanced(
                     model,
                     0..instances.len() as u32,
