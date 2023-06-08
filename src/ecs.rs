@@ -8,6 +8,7 @@ use crate::instance::{Instance, InstanceModel};
 use crate::rendering::model::Model;
 use crate::shapes::{shape::ShapeEnum, spring::Spring, square::Square};
 
+#[derive(Clone)]
 pub struct PositionComponent {
     position: cgmath::Vector2<f32>,
 }
@@ -211,6 +212,21 @@ impl Ecs {
     }
 }
 
+// todo: how do I avoid this function taking idx as an argument?
+macro_rules! zip_filter_unwrap {
+    ($ray: expr ; $reftype: tt) => {
+        zip_filter_unwrap!($ray ; $reftype ; 0)
+    };
+    ($ray: expr ; $reftype: tt ; $idx: tt) => {
+        $ray.iter().filter_map(|v| v.$reftype())
+    };
+    ($($rays: expr ; $reftypes: tt ; $idxs: tt),+) => {
+        itertools::izip!($($rays),+)
+            .filter(|v| $(v.$idxs.is_some())&+)
+            .map(|v| ($(v.$idxs.$reftypes().unwrap()),+))
+    };
+}
+
 pub fn player_movement_system(
     player_components: &Vec<Option<PlayerComponent>>,
     position_components: &mut Vec<Option<PositionComponent>>,
@@ -226,53 +242,59 @@ pub fn player_movement_system(
 }
 
 pub fn connection_system(
-    entities: &Vec<EntityIndex>,
     connection_components: &Vec<Option<ConnectionComponent>>,
     position_components: &mut Vec<Option<PositionComponent>>,
     rotation_components: &mut [Option<RotationComponent>],
     size_components: &mut [Option<SizeComponent>],
 ) {
+    // get position of connections
     let num_components = position_components.len();
-    let iterator = zip(entities, connection_components)
-        .filter(|v| v.1.is_some())
-        .map(|v| (v.0, v.1.as_ref().unwrap()));
-
-    for (entity, connection) in iterator {
-        if (connection.entity1 >= num_components) | (connection.entity2 >= num_components) {
-            panic!("Error when updating connection: entity1 ({:?}) or entity2 ({:?}) does not exist! Number of components is {:?}", connection.entity1, connection.entity2, num_components);
+    let mut connection_positions: Vec<Option<(PositionComponent, PositionComponent)>> = Vec::with_capacity(num_components);
+    for connection_component in connection_components {
+        if let Some(connection) = connection_component {
+            if (connection.entity1 >= num_components) | (connection.entity2 >= num_components) {
+                panic!(
+                    "Error when updating connection: entity1 ({:?}) or entity2 ({:?}) does not exist! Number of components is {:?}",
+                    connection.entity1, connection.entity2, num_components
+                );
+            }
+            match (&position_components[connection.entity1], &position_components[connection.entity2]) {
+                (Some(c1), Some(c2)) => connection_positions.push(Some((c1.clone(), c2.clone()))),
+                _ => {
+                    panic!(
+                        "Error when updating connection: entity1 ({:?}) or entity2 ({:?}) does not have a position!",
+                        connection.entity1, connection.entity2
+                    );
+                }
+            };
+        } else {
+            connection_positions.push(None);
         }
-        let (entity1_position, entity2_position) = match (&position_components[connection.entity1], &position_components[connection.entity2]) {
-            (Some(c1), Some(c2)) => (c1.position, c2.position),
-            _ => panic!("Error when creating connection: entity1 ({:?}) or entity2 ({:?}) does not have a position!", connection.entity1, connection.entity2),
-        };
+    }
 
-        let midpoint = (entity1_position + entity2_position) / 2.0;
-        let between = entity2_position - entity1_position;
+    // create component iterator
+    let iterator = zip_filter_unwrap!(
+        connection_positions.iter(); as_ref; 0,
+        position_components; as_mut; 1,
+        rotation_components; as_mut; 2,
+        size_components; as_mut; 3
+    );
+
+    // update values of connection
+    for (connection_positions, position, rotation, size) in iterator {
+        let midpoint = (connection_positions.1.position + connection_positions.0.position) / 2.0;
+        let between = connection_positions.1.position - connection_positions.0.position;
         let length = between.magnitude();
 
-        match position_components[*entity].as_mut() {
-            Some(position_component) => position_component.position = midpoint,
-            None => panic!(""),
-        }
-
-        match rotation_components[*entity].as_mut() {
-            Some(rotation_component) => {
-                rotation_component.rotation = cgmath::Vector2::angle(cgmath::Vector2::unit_x(), between);
-            }
-            None => panic!(""),
-        }
-
-        match size_components[*entity].as_mut() {
-            Some(mut size_component) => size_component.width = length,
-            None => panic!(""),
-        }
+        position.position = midpoint;
+        rotation.rotation = cgmath::Vector2::angle(cgmath::Vector2::unit_x(), between);
+        size.width = length;
     }
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn instance_system(
     instance_map: &mut HashMap<ShapeEnum, (Model, Vec<InstanceModel>)>,
-    entities: &Vec<EntityIndex>,
     shape_components: &Vec<Option<ShapeComponent>>,
     position_components: &Vec<Option<PositionComponent>>,
     rotation_components: &Vec<Option<RotationComponent>>,
@@ -282,25 +304,20 @@ pub fn instance_system(
     layout: &wgpu::BindGroupLayout,
     texture_data: &[u8],
 ) {
-    // todo: create a helper function
-    let iter = zip(entities, shape_components)
-        .zip(position_components)
-        .zip(rotation_components)
-        .zip(size_components)
-        .map(|v| (v.0 .0 .0 .0, v.0 .0 .0 .1, v.0 .0 .1, v.0 .1, v.1))
-        .filter(|v| v.1.is_some() & v.2.is_some() & v.3.is_some() & v.4.is_some())
-        .map(|v| {
-            let entity = v.0;
-            let shape = v.1.as_ref().unwrap();
-            let size = v.4.as_ref().unwrap();
-            let model = Instance {
-                position: v.2.as_ref().unwrap().position,
-                rotation: v.3.as_ref().unwrap().rotation,
-                width: size.width,
-                height: size.height,
-            }.to_raw();
-            (entity, shape, model)
-        });
+    let iter = zip_filter_unwrap!(
+        shape_components; as_ref; 0,
+        position_components; as_ref; 1,
+        rotation_components; as_ref; 2,
+        size_components; as_ref; 3
+    ).map(|(shape, position, rotation, size)| {
+        let instance_model = Instance {
+            position: position.position,
+            rotation: rotation.rotation,
+            width: size.width,
+            height: size.height,
+        }.to_raw();
+        (shape, instance_model)
+    });
 
     // clear previous instances
     for (_, instances) in instance_map.values_mut() {
@@ -308,11 +325,10 @@ pub fn instance_system(
     }
 
     // add current instances, create new model where neccesary
-    for (_, shape, instance_model) in iter {
-        let shape_enum = shape.shape;
-        match instance_map.entry(shape_enum) {
+    for (shape, instance_model) in iter {
+        match instance_map.entry(shape.shape) {
             Entry::Vacant(e) => {
-                let model = Model::from_shape(shape_enum, texture_data, device, queue, layout).unwrap();
+                let model = Model::from_shape(shape.shape, texture_data, device, queue, layout).unwrap();
                 e.insert((model, vec![instance_model]));
             }
             Entry::Occupied(mut e) => e.get_mut().1.push(instance_model),

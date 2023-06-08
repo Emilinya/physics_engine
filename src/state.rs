@@ -286,7 +286,6 @@ impl State {
             &dt,
         );
         ecs::connection_system(
-            &self.ecs.entities,
             &self.ecs.connection_components,
             &mut self.ecs.position_components,
             &mut self.ecs.rotation_components,
@@ -294,7 +293,6 @@ impl State {
         );
         ecs::instance_system(
             &mut self.instance_map,
-            &self.ecs.entities,
             &self.ecs.shape_components,
             &self.ecs.position_components,
             &self.ecs.rotation_components,
