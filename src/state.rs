@@ -131,13 +131,14 @@ impl State {
             .unwrap();
 
         let fixed_point = ecs.add_fixed_point(Vector2::new(0.0, 0.0));
-        let cube = ecs.add_cube(Vector2::new(2.0, 1.0), 0.5, 0.5);
-        ecs.add_spring(20, 0.01, 0.2, 1.0, 0.1, fixed_point, cube);
+        let cube1 = ecs.add_cube(Vector2::new(1.0, 1.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5);
+        ecs.add_spring(20, 0.01, 0.2, 1.4, 50.0, fixed_point, cube1);
 
-        ecs.convert_to_player(cube, 0.5);
+        let cube2 = ecs.add_cube(Vector2::new(1.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 20.0, cube1, cube2);
 
         // camera stuff
-        let camera = Camera::new(1.0, config.width as f32 / config.height as f32);
+        let camera = Camera::new(2.0, config.width as f32 / config.height as f32);
         let world_size = camera.get_world_size();
 
         let camera_uniform = CameraUniform::from_camera(&camera);
@@ -280,10 +281,12 @@ impl State {
 
     pub fn update(&mut self, dt: instant::Duration) {
         let layout = self.render_pipeline.get_bind_group_layout(0);
-        ecs::player_movement_system(
-            &self.ecs.player_components,
+        ecs::physics_system(
+            &self.ecs.spring_force_components,
+            &self.ecs.connection_components,
             &mut self.ecs.position_components,
-            &dt,
+            &mut self.ecs.physics_components,
+            &dt
         );
         ecs::connection_system(
             &self.ecs.connection_components,

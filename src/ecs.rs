@@ -1,4 +1,3 @@
-use core::iter::zip;
 use std::cmp::Ordering;
 use std::collections::{hash_map::Entry, HashMap};
 
@@ -23,16 +22,11 @@ pub struct ShapeComponent {
     shape: ShapeEnum,
 }
 
-pub struct PlayerComponent {
-    speed: f32,
-}
-#[allow(dead_code)]
 pub struct PhysicsComponent {
-    velocity: f32,
-    force: f32,
+    velocity: cgmath::Vector2<f32>,
+    acceleration: cgmath::Vector2<f32>,
     mass: f32,
 }
-#[allow(dead_code)]
 pub struct SpringForceComponent {
     spring_constant: f32,
     equilibrium_length: f32,
@@ -104,21 +98,11 @@ create_ecs!(
     position_components: PositionComponent,
     rotation_components: RotationComponent,
     physics_components: PhysicsComponent,
-    player_components: PlayerComponent,
     shape_components: ShapeComponent,
     size_components: SizeComponent
 );
 
 impl Ecs {
-    pub fn convert_to_player(&mut self, entity: EntityIndex, speed: f32) {
-        if entity >= self.empty_index {
-            panic!("Can't make non-existant entity a player! Got index {:?}, current empty index is {:?}", entity, self.empty_index);
-        }
-        if self.player_components[entity].is_none() {
-            self.player_components[entity] = Some(PlayerComponent { speed });
-        }
-    }
-
     pub fn add_fixed_point(&mut self, position: cgmath::Vector2<f32>) -> EntityIndex {
         self.position_components.push(Some(PositionComponent { position }));
 
@@ -133,12 +117,19 @@ impl Ecs {
     pub fn add_cube(
         &mut self,
         position: cgmath::Vector2<f32>,
+        velocity: cgmath::Vector2<f32>,
+        mass: f32,
         width: f32,
         height: f32,
     ) -> EntityIndex {
         let position_component = PositionComponent { position };
         let rotation_component = RotationComponent {
             rotation: cgmath::Rad(0.0),
+        };
+        let physics_component = PhysicsComponent {
+            velocity,
+            acceleration: cgmath::Vector2::new(0.0, 0.0),
+            mass
         };
         let shape_component = ShapeComponent {
             shape: ShapeEnum::Square(Square::new()),
@@ -147,6 +138,7 @@ impl Ecs {
 
         self.position_components.push(Some(position_component));
         self.rotation_components.push(Some(rotation_component));
+        self.physics_components.push(Some(physics_component));
         self.shape_components.push(Some(shape_component));
         self.size_components.push(Some(size_component));
 
@@ -218,7 +210,7 @@ macro_rules! zip_filter_unwrap {
         zip_filter_unwrap!($ray ; $reftype ; 0)
     };
     ($ray: expr ; $reftype: tt ; $idx: tt) => {
-        $ray.iter().filter_map(|v| v.$reftype())
+        $ray.into_iter().filter_map(|v| v.$reftype())
     };
     ($($rays: expr ; $reftypes: tt ; $idxs: tt),+) => {
         itertools::izip!($($rays),+)
@@ -227,18 +219,82 @@ macro_rules! zip_filter_unwrap {
     };
 }
 
-pub fn player_movement_system(
-    player_components: &Vec<Option<PlayerComponent>>,
-    position_components: &mut Vec<Option<PositionComponent>>,
-    dt: &instant::Duration,
-) {
-    let iter = zip(player_components, position_components)
-        .filter(|(a, b)| a.is_some() & b.is_some())
-        .map(|(a, b)| (a.as_ref().unwrap(), b.as_mut().unwrap()));
-
-    for (player, position) in iter {
-        position.position += cgmath::Vector2::new(-player.speed * dt.as_secs_f32(), 0.0);
+pub fn gravity_system(physics_components: &mut [Option<PhysicsComponent>]) {
+    for physics_component in zip_filter_unwrap!(physics_components; as_mut) {
+        physics_component.acceleration -= 9.81_f32 * cgmath::Vector2::unit_y();
     }
+}
+
+pub fn spring_system(
+    spring_force_components: &Vec<Option<SpringForceComponent>>,
+    connection_components: &Vec<Option<ConnectionComponent>>,
+    position_components: &mut [Option<PositionComponent>],
+    physics_components: &mut [Option<PhysicsComponent>]
+) {
+    let num_components = position_components.len();
+    for (spring_force, connection) in zip_filter_unwrap!(spring_force_components; as_ref; 0, connection_components; as_ref; 1) {
+        // check if connected entities exists
+        if (connection.entity1 >= num_components) | (connection.entity2 >= num_components) {
+            panic!(
+                "Error when applying spring force: entity1 ({:?}) or entity2 ({:?}) does not exist! Number of components is {:?}",
+                connection.entity1, connection.entity2, num_components
+            );
+        }
+        let (pos1, pos2) = match (&position_components[connection.entity1], &position_components[connection.entity2]) {
+            (Some(c1), Some(c2)) => (c1.position, c2.position),
+            _ => {
+                panic!(
+                    "Error when applying spring force: entity1 ({:?}) or entity2 ({:?}) does not have a position!",
+                    connection.entity1, connection.entity2
+                );
+            }
+        };
+
+        let between = pos2 - pos1;
+        let length = between.magnitude();
+        let unit = between / length;
+        
+        if let Some(phy1) = physics_components[connection.entity1].as_mut() {
+            phy1.acceleration += spring_force.spring_constant * unit * (length - spring_force.equilibrium_length) / phy1.mass;
+        }
+        if let Some(phy2) = physics_components[connection.entity2].as_mut() {
+            phy2.acceleration -= spring_force.spring_constant * unit * (length - spring_force.equilibrium_length) / phy2.mass;
+        }
+    }
+}
+
+/// This just uses Euler-Chromer. todo: RK4
+pub fn physics_step_system(
+    position_components: &mut [Option<PositionComponent>],
+    physics_components: &mut [Option<PhysicsComponent>],
+    dt: &instant::Duration
+) {
+    for (position, physics) in zip_filter_unwrap!(position_components; as_mut; 0, physics_components; as_mut; 1) {
+        physics.velocity += physics.acceleration * dt.as_secs_f32();
+        position.position += physics.velocity * dt.as_secs_f32();
+        physics.acceleration = cgmath::Vector2::new(0.0, 0.0);
+    }
+}
+
+pub fn physics_system(
+    spring_force_components: &Vec<Option<SpringForceComponent>>,
+    connection_components: &Vec<Option<ConnectionComponent>>,
+    position_components: &mut [Option<PositionComponent>],
+    physics_components: &mut [Option<PhysicsComponent>],
+    dt: &instant::Duration
+) {
+    gravity_system(physics_components);
+    spring_system(
+        spring_force_components,
+        connection_components,
+        position_components,
+        physics_components,
+    );
+    physics_step_system(
+        position_components,
+        physics_components,
+        dt,
+    );
 }
 
 pub fn connection_system(
