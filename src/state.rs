@@ -1,34 +1,35 @@
 use std::collections::HashMap;
-use std::iter;
+use std::io::Write;
 
 use cgmath::Vector2;
 use wgpu::util::DeviceExt;
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{ecs, instance, rendering, shapes};
-use rendering::{camera, model, texture};
+use crate::{ecs_utils::ecs, ecs_utils::systems, rendering, shapes};
+use rendering::{camera, model, texture, instance};
 use shapes::shape;
 
+use ecs::{TextureIndex, Ecs};
 use camera::{Camera, CameraUniform};
 use instance::InstanceModel;
 use model::{DrawModel, Model, Vertex};
 use shape::ShapeEnum;
 
 pub struct State {
-    instance_map: HashMap<ShapeEnum, (Model, Vec<InstanceModel>)>,
+    instance_map: HashMap<(ShapeEnum, TextureIndex), (Model, Vec<InstanceModel>)>,
     pub size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     config: wgpu::SurfaceConfiguration,
     camera_bind_group: wgpu::BindGroup,
     depth_texture: texture::Texture,
-    happy_tree_texture: Vec<u8>,
+    texture_map: Vec<Box<[u8]>>,
     world_size: (f32, f32),
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
     camera: Camera,
     window: Window,
-    ecs: ecs::Ecs,
+    ecs: Ecs,
 }
 
 impl State {
@@ -37,7 +38,6 @@ impl State {
 
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
-        log::warn!("WGPU setup");
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
@@ -57,7 +57,7 @@ impl State {
             })
             .await
             .unwrap();
-        log::warn!("device and queue");
+
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -77,7 +77,6 @@ impl State {
             .await
             .unwrap();
 
-        log::warn!("Surface");
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an Srgb surface texture. Using a different
         // one will result all the colors comming out darker. If you want to support non
@@ -123,19 +122,27 @@ impl State {
                 label: Some("texture_bind_group_layout"),
             });
 
-        // entity stuff
-        let instance_map: HashMap<ShapeEnum, (Model, Vec<InstanceModel>)> = HashMap::new();
-        let mut ecs = ecs::Ecs::new();
+        // texture stuff
         let happy_tree_texture = rendering::resources::load_binary("happy-tree.png")
             .await
             .unwrap();
+        let gray_texture = rendering::resources::load_binary("gray.png")
+            .await
+            .unwrap();
 
-        let fixed_point = ecs.add_fixed_point(Vector2::new(0.0, 0.0));
-        let cube1 = ecs.add_cube(Vector2::new(1.0, 1.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5);
-        ecs.add_spring(20, 0.01, 0.2, 1.4, 50.0, fixed_point, cube1);
+        let texture_map: Vec<Box<[u8]>> = vec![happy_tree_texture.into(), gray_texture.into()];
+        
+        // entity stuff
+        let instance_map: HashMap<(ShapeEnum, TextureIndex), (Model, Vec<InstanceModel>)> = HashMap::new();
 
-        let cube2 = ecs.add_cube(Vector2::new(1.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5);
-        ecs.add_spring(20, 0.01, 0.2, 1.0, 20.0, cube1, cube2);
+        let mut ecs = Ecs::new();
+
+        let fixed_point = ecs.add_fixed_point(Vector2::new(0.0, 2.0));
+        let cube1 = ecs.add_cube(Vector2::new(1.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5, 0);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 1000.0, fixed_point, cube1, 1);
+
+        let cube2 = ecs.add_cube(Vector2::new(2.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5, 0);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 1000.0, cube1, cube2, 1);
 
         // camera stuff
         let camera = Camera::new(2.0, config.width as f32 / config.height as f32);
@@ -244,7 +251,7 @@ impl State {
             config,
             camera_bind_group,
             depth_texture,
-            happy_tree_texture,
+            texture_map,
             world_size,
             surface,
             device,
@@ -281,29 +288,50 @@ impl State {
 
     pub fn update(&mut self, dt: instant::Duration) {
         let layout = self.render_pipeline.get_bind_group_layout(0);
-        ecs::physics_system(
+
+        // calculate total energy
+        let energy = systems::physics_systems::energy_system(
+            &self.ecs.spring_force_components,
+            &self.ecs.connection_components,
+            &self.ecs.position_components,
+            &self.ecs.physics_components
+        );
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("plotting/data.dat")
+            .unwrap();
+        writeln!(file, "{:.8} {:.8}", dt.as_secs_f32(), energy).unwrap();
+
+        // apply physics step
+        systems::physics_systems::physics_system(
             &self.ecs.spring_force_components,
             &self.ecs.connection_components,
             &mut self.ecs.position_components,
             &mut self.ecs.physics_components,
             &dt
         );
-        ecs::connection_system(
+
+        // update connection instances
+        systems::rendering_systems::connection_system(
             &self.ecs.connection_components,
             &mut self.ecs.position_components,
             &mut self.ecs.rotation_components,
             &mut self.ecs.size_components,
         );
-        ecs::instance_system(
+
+        // update rendering instances
+        systems::rendering_systems::instance_system(
             &mut self.instance_map,
+            &self.texture_map,
             &self.ecs.shape_components,
             &self.ecs.position_components,
             &self.ecs.rotation_components,
+            &self.ecs.texture_components,
             &self.ecs.size_components,
             &self.device,
             &self.queue,
             &layout,
-            &self.happy_tree_texture,
         );
     }
 
@@ -338,9 +366,9 @@ impl State {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            r: 1.0,
+                            g: 1.0,
+                            b: 1.0,
                             a: 1.0,
                         }),
                         store: true,
@@ -370,7 +398,7 @@ impl State {
             }
         }
 
-        self.queue.submit(iter::once(encoder.finish()));
+        self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())

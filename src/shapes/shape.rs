@@ -4,7 +4,7 @@ use core::cmp::{max_by, min_by};
 use cgmath::Angle;
 
 use crate::shapes::{circle::Circle, ngon::NGon, slope::Slope, spring::Spring, square::Square};
-use crate::{instance::Instance, rendering::model::ModelVertex};
+use crate::rendering::{model::ModelVertex, instance::Instance};
 
 pub trait Shape {
     fn to_model_vertices(&self) -> Vec<ModelVertex> {

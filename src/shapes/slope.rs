@@ -2,8 +2,7 @@ use core::cell::Ref;
 
 use cgmath::Zero;
 
-use crate::instance::Instance;
-use crate::rendering::model::ModelVertex;
+use crate::rendering::{model::ModelVertex, instance::Instance};
 use crate::shapes::{shape::Shape, square::Square};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

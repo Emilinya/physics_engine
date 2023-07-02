@@ -6,8 +6,7 @@ use winit::{
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-mod ecs;
-mod instance;
+mod ecs_utils;
 mod rendering;
 mod shapes;
 mod state;
@@ -22,6 +21,7 @@ pub async fn run() {
             console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
         } else {
             env_logger::init();
+            // env_logger::init_from_env(env_logger::Env::new().default_filter_or("Warn"));
         }
     }
 
@@ -54,7 +54,7 @@ pub async fn run() {
 
     // State::new uses async code, so we're going to wait for it to finish
     let mut state = State::new(window).await;
-    let mut last_render_time = instant::Instant::now();
+    let mut last_render_time: Option<instant::Instant> = None;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -88,8 +88,14 @@ pub async fn run() {
             }
             Event::RedrawRequested(window_id) if window_id == state.window().id() => {
                 let now = instant::Instant::now();
-                let dt = now - last_render_time;
-                last_render_time = now;
+                let dt = {
+                    if let Some(time) = last_render_time {
+                        now - time
+                    } else {
+                        instant::Duration::ZERO
+                    }
+                };
+                last_render_time = Some(now);
                 state.update(dt);
                 match state.render() {
                     Ok(_) => {}

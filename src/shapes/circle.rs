@@ -2,8 +2,7 @@ use core::cell::Ref;
 
 use cgmath::Angle;
 
-use crate::instance::Instance;
-use crate::rendering::model::ModelVertex;
+use crate::rendering::{model::ModelVertex, instance::Instance};
 use crate::shapes::{ngon::NGon, shape::Shape};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
