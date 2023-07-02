@@ -8,16 +8,23 @@
     <title>Physics Engine</title>
     <style>
         canvas {
-            background-color: black;
+            background-color: white;
         }
     </style>
 </head>
 
 <body id="wasm-example">
+    <div id="canvasContainer" style="display: flex; justify-content: center;"></div>
     <script type="module">
         import init from "./pkg/physics_engine.js";
         init().then(() => {
             console.log("WASM Loaded");
+
+            let canvas = document.getElementsByTagName("canvas")[0];
+            // canvas.style.width = window.innerWidth + "px";
+            // canvas.style.height = window.innerHeight + "px";
+            let container = document.getElementById("canvasContainer");
+            container.appendChild(canvas);
         });
     </script>
 </body>
