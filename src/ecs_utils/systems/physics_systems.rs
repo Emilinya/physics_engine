@@ -62,6 +62,7 @@ fn acceleration_system(
     );
 }
 
+#[allow(dead_code)]
 pub fn energy_system(
     spring_force_components: &Vec<Option<SpringForceComponent>>,
     connection_components: &Vec<Option<ConnectionComponent>>,

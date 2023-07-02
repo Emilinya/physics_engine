@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::io::Write;
 
 use cgmath::Vector2;
 use wgpu::util::DeviceExt;
@@ -294,20 +293,6 @@ impl State {
 
     pub fn update(&mut self, dt: instant::Duration) {
         let layout = self.render_pipeline.get_bind_group_layout(0);
-
-        // calculate total energy
-        let energy = systems::physics_systems::energy_system(
-            &self.ecs.spring_force_components,
-            &self.ecs.connection_components,
-            &self.ecs.position_components,
-            &self.ecs.physics_components
-        );
-        let mut file = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("plotting/data.dat")
-            .unwrap();
-        writeln!(file, "{:.8} {:.8}", dt.as_secs_f32(), energy).unwrap();
 
         // apply physics step
         systems::physics_systems::physics_system(
