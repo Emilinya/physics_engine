@@ -139,10 +139,16 @@ impl State {
 
         let fixed_point = ecs.add_fixed_point(Vector2::new(0.0, 2.0));
         let cube1 = ecs.add_cube(Vector2::new(1.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5, 0);
-        ecs.add_spring(20, 0.01, 0.2, 1.0, 1000.0, fixed_point, cube1, 1);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 20.0, fixed_point, cube1, 1);
 
         let cube2 = ecs.add_cube(Vector2::new(2.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5, 0);
-        ecs.add_spring(20, 0.01, 0.2, 1.0, 1000.0, cube1, cube2, 1);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 20.0, cube1, cube2, 1);
+
+        let cube3 = ecs.add_cube(Vector2::new(3.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5, 0);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 20.0, cube2, cube3, 1);
+
+        let cube4 = ecs.add_cube(Vector2::new(4.0, 2.0), Vector2::new(0.0, 0.0), 0.1, 0.5, 0.5, 0);
+        ecs.add_spring(20, 0.01, 0.2, 1.0, 20.0, cube3, cube4, 1);
 
         // camera stuff
         let camera = Camera::new(2.0, config.width as f32 / config.height as f32);
