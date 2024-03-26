@@ -1,30 +1,31 @@
-use core::hash::{Hash, Hasher};
-use std::f32::consts::PI;
-
-use cgmath::Angle;
-
-use crate::rendering::model::ModelVertex;
 use crate::shapes::shape::Shape;
 
-fn spring_top_curve(t: f32, cc: f32, d: f32) -> (f32, f32) {
-    let (sin, cos) = cgmath::Rad(cc * 2.0 * PI * t).sin_cos();
+use bevy::render::mesh::{Indices, Mesh};
+use std::f32::consts::PI;
+
+fn get_f_fp_nfp(t: f32, cc: f32, d: f32) -> (f32, f32, f32) {
+    let (sin, cos) = (cc * 2.0 * PI * t).sin_cos();
+
     let f = 0.5 * (1.0 - d) * sin;
     let fp = 0.5 * (1.0 - d) * cc * 2.0 * PI * cos;
     let nfp = (1.0 + fp.powi(2)).sqrt();
+
+    (f, fp, nfp)
+}
+
+fn spring_top_curve(t: f32, cc: f32, d: f32) -> (f32, f32) {
+    let (f, fp, nfp) = get_f_fp_nfp(t, cc, d);
 
     (t - 0.5 * d * fp / nfp, f + 0.5 * d / nfp)
 }
 
 fn spring_bottom_curve(t: f32, cc: f32, d: f32) -> (f32, f32) {
-    let (sin, cos) = cgmath::Rad(cc * 2.0 * PI * t).sin_cos();
-    let f = 0.5 * (1.0 - d) * sin;
-    let fp = 0.5 * (1.0 - d) * cc * 2.0 * PI * cos;
-    let nfp = (1.0 + fp.powi(2)).sqrt();
+    let (f, fp, nfp) = get_f_fp_nfp(t, cc, d);
 
     (t + 0.5 * d * fp / nfp, f - 0.5 * d / nfp)
 }
 
-fn interpolate(x: f32, points: &Vec<(f32, f32)>) -> f32 {
+fn interpolate(x: f32, points: &[(f32, f32)]) -> f32 {
     let mut p = 0.0;
     for i in 0..points.len() {
         let mut l = 1.0;
@@ -40,7 +41,7 @@ fn interpolate(x: f32, points: &Vec<(f32, f32)>) -> f32 {
     p
 }
 
-fn curve2function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
+fn curve_to_function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
     let (fist_px, fist_py) = f(x);
     if (fist_px - x).abs() < 1e-8 {
         return fist_py;
@@ -64,39 +65,9 @@ fn curve2function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
     interpolate(x, &points)
 }
 
-#[derive(Debug, Clone, Copy)]
 pub struct Spring {
-    coil_count: u32,
-    coil_diameter: f32,
-}
-
-impl Spring {
-    pub fn new(coil_count: u32, coil_diameter: f32) -> Self {
-        Self { coil_count, coil_diameter }
-    }
-
-    fn canonicalize(&self) -> (u32, i64) {
-        // to be able to hash shape, we need to do something with our float.
-        // diameters smaller than 0.001 don't show up on screen anyway
-        (
-            self.coil_count,
-            (self.coil_diameter * 1000.0).round() as i64,
-        )
-    }
-}
-
-impl PartialEq for Spring {
-    fn eq(&self, other: &Spring) -> bool {
-        self.canonicalize() == other.canonicalize()
-    }
-}
-
-impl Eq for Spring {}
-
-impl Hash for Spring {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.canonicalize().hash(state);
-    }
+    pub coil_count: u32,
+    pub coil_diameter: f32,
 }
 
 impl Shape for Spring {
@@ -107,25 +78,25 @@ impl Shape for Spring {
         let dx = 1.0 / (n - 1) as f32;
 
         let top_curve = |t: f32| spring_top_curve(t, self.coil_count as f32, self.coil_diameter);
-        let bottom_curve = |t: f32| spring_bottom_curve(t, self.coil_count as f32, self.coil_diameter);
+        let bottom_curve =
+            |t: f32| spring_bottom_curve(t, self.coil_count as f32, self.coil_diameter);
 
         let mut points = Vec::with_capacity(num_points as usize);
-        points.push([-0.5, curve2function(-0.5, delta, top_curve)]);
-        points.push([-0.5, curve2function(-0.5, delta, bottom_curve)]);
+        points.push([-0.5, curve_to_function(-0.5, delta, top_curve)]);
+        points.push([-0.5, curve_to_function(-0.5, delta, bottom_curve)]);
         for i in 1..n {
             let x = -0.5 + (i as f32) * dx;
-            points.push([x, curve2function(x, delta, top_curve)]);
+            points.push([x, curve_to_function(x, delta, top_curve)]);
             points.push([
                 x - 0.5 * dx,
-                curve2function(x - 0.5 * dx, delta, bottom_curve),
+                curve_to_function(x - 0.5 * dx, delta, bottom_curve),
             ]);
         }
-        points.push([0.5, curve2function(0.5, delta, bottom_curve)]);
+        points.push([0.5, curve_to_function(0.5, delta, bottom_curve)]);
 
         points
     }
-
-    fn get_model(&self) -> (Vec<ModelVertex>, Vec<u32>) {
+    fn get_mesh(&self) -> Mesh {
         let n = 20 * self.coil_count;
         let num_indices = 3 * (2 * n - 1);
         let mut indices = Vec::with_capacity(num_indices as usize);
@@ -146,6 +117,7 @@ impl Shape for Spring {
         indices.push(2 * n - 1);
         indices.push(2 * n - 2);
 
-        (self.to_model_vertices(), indices)
+        self.get_incomplete_mesh()
+            .with_inserted_indices(Indices::U32(indices))
     }
 }

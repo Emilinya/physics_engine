@@ -1,6 +1,6 @@
 /.vscode
 /target
 /plotting
-/__pycache__
+/old
 
 Cargo.lock
