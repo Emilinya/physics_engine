@@ -2,5 +2,7 @@
 /target
 /plotting
 /old
+/wasm
+/test
 
 Cargo.lock

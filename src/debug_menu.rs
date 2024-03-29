@@ -1,59 +1,54 @@
 use bevy::diagnostic::{
     Diagnostic, DiagnosticsStore, FrameTimeDiagnosticsPlugin, RegisterDiagnostic,
 };
-use bevy::prelude as bvy;
-use bvy::BuildChildren;
+use bevy::prelude::*;
 
 use crate::TotalEnergy;
 
-#[derive(bvy::Component)]
+#[derive(Component)]
 struct DebugRoot;
 
-#[derive(bvy::Component)]
+#[derive(Component)]
 struct FpsText;
 
-#[derive(bvy::Component)]
+#[derive(Component)]
 struct InitialEnergyText;
 
-#[derive(bvy::Component)]
+#[derive(Component)]
 struct CurrentEnergyText;
 
 pub struct DebugPlugin;
 
-impl bvy::Plugin for DebugPlugin {
-    fn build(&self, app: &mut bevy::prelude::App) {
+impl Plugin for DebugPlugin {
+    fn build(&self, app: &mut App) {
         app.register_diagnostic(
             Diagnostic::new(FrameTimeDiagnosticsPlugin::FPS).with_smoothing_factor(0.2),
         )
-        .add_systems(bvy::Startup, setup_fps_counter)
-        .add_systems(bvy::Update, FrameTimeDiagnosticsPlugin::diagnostic_system)
-        .add_systems(bvy::Update, (update_fps_text, update_energy_text));
+        .add_systems(Startup, setup_fps_counter)
+        .add_systems(Update, FrameTimeDiagnosticsPlugin::diagnostic_system)
+        .add_systems(Update, (update_fps_text, update_energy_text));
     }
 }
 
-fn spawn_debug_text<T: bvy::Component>(
-    commands: &mut bvy::Commands,
-    label: T,
-    text: &str,
-) -> bvy::Entity {
+fn spawn_debug_text<T: Component>(commands: &mut Commands, label: T, text: &str) -> Entity {
     commands
         .spawn((
             label,
-            bvy::TextBundle {
-                text: bvy::Text::from_sections([
-                    bvy::TextSection {
+            TextBundle {
+                text: Text::from_sections([
+                    TextSection {
                         value: text.into(),
-                        style: bvy::TextStyle {
+                        style: TextStyle {
                             font_size: 16.0,
-                            color: bvy::Color::WHITE,
+                            color: Color::WHITE,
                             ..Default::default()
                         },
                     },
-                    bvy::TextSection {
+                    TextSection {
                         value: " N/A".into(),
-                        style: bvy::TextStyle {
+                        style: TextStyle {
                             font_size: 16.0,
-                            color: bvy::Color::WHITE,
+                            color: Color::WHITE,
                             ..Default::default()
                         },
                     },
@@ -64,21 +59,21 @@ fn spawn_debug_text<T: bvy::Component>(
         .id()
 }
 
-fn setup_fps_counter(mut commands: bvy::Commands) {
+fn setup_fps_counter(mut commands: Commands) {
     let root = commands
         .spawn((
             DebugRoot,
-            bvy::NodeBundle {
-                background_color: bvy::BackgroundColor(bvy::Color::BLACK.with_a(0.5)),
-                z_index: bvy::ZIndex::Global(i32::MAX),
-                style: bvy::Style {
-                    position_type: bvy::PositionType::Absolute,
-                    top: bvy::Val::Percent(1.),
-                    right: bvy::Val::Auto,
-                    bottom: bvy::Val::Auto,
-                    left: bvy::Val::Percent(0.),
-                    padding: bvy::UiRect::all(bvy::Val::Px(4.0)),
-                    flex_direction: bvy::FlexDirection::Column,
+            NodeBundle {
+                background_color: BackgroundColor(Color::BLACK.with_a(0.5)),
+                z_index: ZIndex::Global(i32::MAX),
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(1.),
+                    right: Val::Auto,
+                    bottom: Val::Auto,
+                    left: Val::Percent(0.),
+                    padding: UiRect::all(Val::Px(4.0)),
+                    flex_direction: FlexDirection::Column,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -95,10 +90,7 @@ fn setup_fps_counter(mut commands: bvy::Commands) {
         .push_children(&[fps_text, initial_energy_text, energy_text]);
 }
 
-fn update_fps_text(
-    diagnostics: bvy::Res<DiagnosticsStore>,
-    mut query: bvy::Query<&mut bvy::Text, bvy::With<FpsText>>,
-) {
+fn update_fps_text(diagnostics: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
     for mut text in &mut query {
         if let Some(value) = diagnostics
             .get(&FrameTimeDiagnosticsPlugin::FPS)
@@ -113,10 +105,10 @@ fn update_fps_text(
 
 #[allow(clippy::type_complexity)]
 fn update_energy_text(
-    energy: bvy::Res<TotalEnergy>,
-    mut set: bvy::ParamSet<(
-        bvy::Query<&mut bvy::Text, bvy::With<InitialEnergyText>>,
-        bvy::Query<&mut bvy::Text, bvy::With<CurrentEnergyText>>,
+    energy: Res<TotalEnergy>,
+    mut set: ParamSet<(
+        Query<&mut Text, With<InitialEnergyText>>,
+        Query<&mut Text, With<CurrentEnergyText>>,
     )>,
 ) {
     for mut text in &mut set.p0().iter_mut() {

@@ -1,8 +1,7 @@
-use bevy::ecs::change_detection::DetectChangesMut;
 use bevy::math::{DVec2, Vec3};
-use bevy::prelude as bvy;
-use bvy::IntoSystemConfigs;
+use bevy::prelude::*;
 
+use crate::integrators::{Integrator, Integrators};
 use crate::{components::*, TotalEnergy};
 
 pub struct PhysicsPlugin;
@@ -10,27 +9,23 @@ pub struct PhysicsPlugin;
 // g = π²
 const GRAVITY: f64 = 9.81;
 
-impl bvy::Plugin for PhysicsPlugin {
-    fn build(&self, app: &mut bevy::prelude::App) {
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut App) {
+        Integrators::EulerChromer.build(app, (apply_gravity, apply_spring_force));
         app.add_systems(
-            bvy::FixedUpdate,
-            (
-                (apply_gravity, apply_spring_force),
-                physics_step,
-                update_spring,
-            )
-                .chain(),
-        )
-        .add_systems(bvy::Update, (calculate_total_energy, update_transform));
+            Update,
+            (calculate_total_energy, update_transform, update_spring),
+        );
     }
 }
 
-const SPRING_CONNECTION_ERROR: &str = "a connection is pointing to an entity without a position!";
-
 fn get_spring_connection_positions(
     connection: &Connection,
-    position_query: &bvy::Query<&Position, bvy::Without<Spring>>,
+    position_query: &Query<&Position, Without<Spring>>,
 ) -> (DVec2, DVec2) {
+    const SPRING_CONNECTION_ERROR: &str =
+        "a connection is pointing to an entity without a position!";
+
     let pos1 = position_query
         .get(connection.entity1)
         .expect(SPRING_CONNECTION_ERROR)
@@ -43,16 +38,16 @@ fn get_spring_connection_positions(
     (pos1, pos2)
 }
 
-fn apply_gravity(mut query: bvy::Query<&mut PhysicsObject>) {
+pub fn apply_gravity(mut query: Query<&mut PhysicsObject>) {
     for mut physics_component in query.iter_mut() {
         physics_component.acceleration -= GRAVITY * DVec2::Y;
     }
 }
 
-fn apply_spring_force(
-    spring_query: bvy::Query<(&SpringForce, &Connection)>,
-    position_query: bvy::Query<&Position, bvy::Without<Spring>>,
-    mut physics_query: bvy::Query<&mut PhysicsObject>,
+pub fn apply_spring_force(
+    spring_query: Query<(&SpringForce, &Connection)>,
+    position_query: Query<&Position, Without<Spring>>,
+    mut physics_query: Query<&mut PhysicsObject>,
 ) {
     for (spring_force, connection) in spring_query.iter() {
         let (pos1, pos2) = get_spring_connection_positions(connection, &position_query);
@@ -78,35 +73,9 @@ fn apply_spring_force(
     }
 }
 
-// For now just use Euler-Chromer
-fn physics_step(
-    timer: bvy::Res<bvy::Time>,
-    mut query: bvy::Query<(&mut Position, &mut PhysicsObject)>,
-) {
-    let dt = timer.delta_seconds_f64();
-    if dt > 1.0 / 30.0 {
-        bevy::log::warn!("Ignoring a large step size equal to {}", dt);
-        for (_, mut physics_object) in query.iter_mut() {
-            physics_object.acceleration = DVec2::ZERO;
-        }
-        return;
-    }
-
-    for (mut position, mut physics_object) in query.iter_mut() {
-        let acceleration = physics_object.acceleration;
-        physics_object.acceleration = DVec2::ZERO;
-
-        physics_object.velocity += acceleration * dt;
-        position.0 += physics_object.velocity * dt;
-    }
-}
-
 fn update_spring(
-    mut spring_query: bvy::Query<
-        (&Connection, &mut Position, &mut Size, &mut Rotation),
-        bvy::With<Spring>,
-    >,
-    position_query: bvy::Query<&Position, bvy::Without<Spring>>,
+    mut spring_query: Query<(&Connection, &mut Position, &mut Size, &mut Rotation), With<Spring>>,
+    position_query: Query<&Position, Without<Spring>>,
 ) {
     for (connection, mut position, mut size, mut rotation) in spring_query.iter_mut() {
         let (pos1, pos2) = get_spring_connection_positions(connection, &position_query);
@@ -122,8 +91,8 @@ fn update_spring(
 }
 
 fn update_transform(
-    camera_query: bvy::Query<&bvy::Camera>,
-    mut transform_query: bvy::Query<(&mut bvy::Transform, &Position, &Size, &Rotation)>,
+    camera_query: Query<&Camera>,
+    mut transform_query: Query<(&mut Transform, &Position, &Size, &Rotation)>,
 ) {
     let camera = camera_query.get_single().unwrap();
     let viewport_size = camera
@@ -133,19 +102,20 @@ fn update_transform(
 
     for (mut transform, position, size, rotation) in transform_query.iter_mut() {
         let z = transform.translation.z;
-        *transform = bvy::Transform {
+        *transform = Transform {
             translation: Vec3::new(position.0.x as f32 * scale, position.0.y as f32 * scale, z),
-            rotation: bvy::Quat::from_rotation_z(rotation.0 as f32),
+            rotation: Quat::from_rotation_z(rotation.0 as f32),
             scale: Vec3::new(size.width as f32 * scale, size.height as f32 * scale, 1.0),
         };
     }
 }
 
 fn calculate_total_energy(
-    mut total_energy_resource: bvy::ResMut<TotalEnergy>,
-    spring_query: bvy::Query<(&SpringForce, &Connection)>,
-    position_query: bvy::Query<&Position, bvy::Without<Spring>>,
-    body_query: bvy::Query<(&Position, &PhysicsObject)>,
+    timer: Res<Time>,
+    mut total_energy_resource: ResMut<TotalEnergy>,
+    spring_query: Query<(&SpringForce, &Connection)>,
+    position_query: Query<&Position, Without<Spring>>,
+    body_query: Query<(&Position, &PhysicsObject)>,
 ) {
     let mut total_energy = 0.0;
 
@@ -165,9 +135,14 @@ fn calculate_total_energy(
         total_energy += 0.5 * spring_force.spring_constant * elongation.powi(2);
     }
 
-    total_energy_resource.set_changed();
-    total_energy_resource.current = Some(total_energy);
-    if total_energy_resource.initial.is_none() {
+    if let Some(previous_value) = total_energy_resource.current {
+        let ema_smoothing_factor = 0.2;
+        let delta = timer.delta_seconds_f64();
+        let alpha = (delta / ema_smoothing_factor).clamp(0.0, 1.0);
+        total_energy_resource.current =
+            Some(previous_value + alpha * (total_energy - previous_value));
+    } else {
+        total_energy_resource.current = Some(total_energy);
         total_energy_resource.initial = Some(total_energy);
     }
 }

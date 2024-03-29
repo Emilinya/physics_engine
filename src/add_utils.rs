@@ -2,16 +2,16 @@ use crate::components::*;
 use crate::shapes::shape::Shape;
 
 use bevy::math::{DVec2, Vec2};
-use bevy::prelude as bvy;
+use bevy::prelude::*;
 
 fn add_physics_cube(
-    commands: &mut bvy::Commands,
-    asset_server: &bvy::Res<bvy::AssetServer>,
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
     position: DVec2,
     mass: f64,
     width: f64,
     height: f64,
-) -> bvy::Entity {
+) -> Entity {
     commands
         .spawn((
             Square,
@@ -21,7 +21,7 @@ fn add_physics_cube(
             PhysicsObject::at_rest(mass),
             bevy::sprite::SpriteBundle {
                 texture: asset_server.load("happy-tree.png"),
-                sprite: bvy::Sprite {
+                sprite: Sprite {
                     custom_size: Some(Vec2::new(1.0, 1.0)),
                     ..Default::default()
                 },
@@ -32,12 +32,12 @@ fn add_physics_cube(
 }
 
 fn add_spring(
-    commands: &mut bvy::Commands,
-    meshes: &mut bvy::ResMut<bvy::Assets<bvy::Mesh>>,
-    materials: &mut bvy::ResMut<bvy::Assets<bvy::ColorMaterial>>,
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
     width: f64,
-    entity1: bvy::Entity,
-    entity2: bvy::Entity,
+    entity1: Entity,
+    entity2: Entity,
 ) {
     let spring = crate::shapes::spring::Spring {
         coil_count: 20,
@@ -52,24 +52,24 @@ fn add_spring(
             height: width,
         },
         SpringForce {
-            spring_constant: 20000.0,
+            spring_constant: 20.0,
             equilibrium_length: 1.0,
         },
         Connection { entity1, entity2 },
         bevy::sprite::MaterialMesh2dBundle {
             mesh: meshes.add(spring.get_mesh()).into(),
-            material: materials.add(bvy::Color::BLACK),
-            transform: bvy::Transform::from_xyz(0.0, 0.0, -1.0),
+            material: materials.add(Color::BLACK),
+            transform: Transform::from_xyz(0.0, 0.0, -1.0),
             ..Default::default()
         },
     ));
 }
 
 pub fn add_entities(
-    mut commands: bvy::Commands,
-    mut meshes: bvy::ResMut<bvy::Assets<bvy::Mesh>>,
-    mut materials: bvy::ResMut<bvy::Assets<bvy::ColorMaterial>>,
-    asset_server: bvy::Res<bvy::AssetServer>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
     let fixed_point = commands.spawn(Position(DVec2::new(0.0, 2.0))).id();
     let mut entity1 = fixed_point;
