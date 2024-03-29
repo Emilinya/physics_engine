@@ -11,7 +11,7 @@ const GRAVITY: f64 = 9.81;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        Integrators::EulerChromer.build(app, (apply_gravity, apply_spring_force));
+        Integrators::VelocityVerlet.build(app, (apply_gravity, apply_spring_force));
         app.add_systems(
             Update,
             (calculate_total_energy, update_transform, update_spring),

@@ -87,8 +87,6 @@ impl VelocityVerletStep {
 
         for mut physics_object in query.iter_mut() {
             let acceleration = physics_object.acceleration;
-            physics_object.acceleration = DVec2::ZERO;
-
             physics_object.velocity += 0.5 * acceleration * dt;
         }
     }
