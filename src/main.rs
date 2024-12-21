@@ -41,6 +41,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 // mode: WindowMode::Fullscreen,
+                canvas: Some("#gameCanvas".into()),
                 resolution: WindowResolution::new(960.0, 540.0),
                 position: WindowPosition::Centered(MonitorSelection::Primary),
                 title: "Physics engine".to_string(),
