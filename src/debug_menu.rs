@@ -33,28 +33,21 @@ impl Plugin for DebugPlugin {
 fn spawn_debug_text<T: Component>(commands: &mut Commands, label: T, text: &str) -> Entity {
     commands
         .spawn((
-            label,
-            TextBundle {
-                text: Text::from_sections([
-                    TextSection {
-                        value: text.into(),
-                        style: TextStyle {
-                            font_size: 16.0,
-                            color: Color::WHITE,
-                            ..Default::default()
-                        },
-                    },
-                    TextSection {
-                        value: " N/A".into(),
-                        style: TextStyle {
-                            font_size: 16.0,
-                            color: Color::WHITE,
-                            ..Default::default()
-                        },
-                    },
-                ]),
+            Text::new(text),
+            TextFont {
+                font_size: 16.0,
                 ..Default::default()
             },
+            TextColor::from(Color::WHITE),
+        ))
+        .with_child((
+            label,
+            TextSpan::new(" N/A"),
+            TextFont {
+                font_size: 16.0,
+                ..Default::default()
+            },
+            TextColor::from(Color::WHITE),
         ))
         .id()
 }
@@ -63,21 +56,18 @@ fn setup_fps_counter(mut commands: Commands) {
     let root = commands
         .spawn((
             DebugRoot,
-            NodeBundle {
-                background_color: BackgroundColor(Color::BLACK.with_a(0.5)),
-                z_index: ZIndex::Global(i32::MAX),
-                style: Style {
-                    position_type: PositionType::Absolute,
-                    top: Val::Percent(1.),
-                    right: Val::Auto,
-                    bottom: Val::Auto,
-                    left: Val::Percent(0.),
-                    padding: UiRect::all(Val::Px(4.0)),
-                    flex_direction: FlexDirection::Column,
-                    ..Default::default()
-                },
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Percent(1.),
+                right: Val::Auto,
+                bottom: Val::Auto,
+                left: Val::Percent(0.),
+                padding: UiRect::all(Val::Px(4.0)),
+                flex_direction: FlexDirection::Column,
                 ..Default::default()
             },
+            GlobalZIndex(i32::MAX),
+            BackgroundColor(Color::BLACK.with_alpha(0.5)),
         ))
         .id();
 
@@ -87,18 +77,21 @@ fn setup_fps_counter(mut commands: Commands) {
 
     commands
         .entity(root)
-        .push_children(&[fps_text, initial_energy_text, energy_text]);
+        .add_children(&[fps_text, initial_energy_text, energy_text]);
 }
 
-fn update_fps_text(diagnostics: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
+fn update_fps_text(
+    diagnostics: Res<DiagnosticsStore>,
+    mut query: Query<&mut TextSpan, With<FpsText>>,
+) {
     for mut text in &mut query {
         if let Some(value) = diagnostics
             .get(&FrameTimeDiagnosticsPlugin::FPS)
             .and_then(|fps| fps.smoothed())
         {
-            text.sections[1].value = format!("{value:.0}");
+            text.0 = format!("{value:.0}");
         } else {
-            text.sections[1].value = " N/A".into();
+            text.0 = " N/A".into();
         }
     }
 }
@@ -107,19 +100,19 @@ fn update_fps_text(diagnostics: Res<DiagnosticsStore>, mut query: Query<&mut Tex
 fn update_energy_text(
     energy: Res<TotalEnergy>,
     mut set: ParamSet<(
-        Query<&mut Text, With<InitialEnergyText>>,
-        Query<&mut Text, With<CurrentEnergyText>>,
+        Query<&mut TextSpan, With<InitialEnergyText>>,
+        Query<&mut TextSpan, With<CurrentEnergyText>>,
     )>,
 ) {
-    for mut text in &mut set.p0().iter_mut() {
+    for mut text in set.p0().iter_mut() {
         if let Some(value) = energy.initial {
-            text.sections[1].value = format!("{value:.3}");
+            text.0 = format!("{value:.3}");
         }
     }
 
-    for mut text in &mut set.p1().iter_mut() {
+    for mut text in set.p1().iter_mut() {
         if let Some(value) = energy.current {
-            text.sections[1].value = format!("{value:.3}");
+            text.0 = format!("{value:.3}");
         }
     }
 }

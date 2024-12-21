@@ -26,7 +26,7 @@ impl Integrator for Integrators {
 struct EulerChromerStep;
 impl EulerChromerStep {
     fn step(timer: Res<Time>, mut query: Query<(&mut Position, &mut PhysicsObject)>) {
-        let dt = timer.delta_seconds_f64();
+        let dt = timer.delta_secs_f64();
         if dt > 1.0 / 30.0 {
             bevy::log::warn!("Ignoring a large step size equal to {}", dt);
             for (_, mut physics_object) in query.iter_mut() {
@@ -59,7 +59,7 @@ struct VelocityVerletStep;
 impl VelocityVerletStep {
     /// Runs before acceleration is calculated => uses previous acceleration
     fn update_positions(timer: Res<Time>, mut query: Query<(&mut Position, &mut PhysicsObject)>) {
-        let dt = timer.delta_seconds_f64();
+        let dt = timer.delta_secs_f64();
         if dt > 1.0 / 30.0 {
             return;
         }
@@ -76,7 +76,7 @@ impl VelocityVerletStep {
 
     /// Runs after acceleration is calculated => uses new acceleration
     fn update_velocities(timer: Res<Time>, mut query: Query<&mut PhysicsObject>) {
-        let dt = timer.delta_seconds_f64();
+        let dt = timer.delta_secs_f64();
         if dt > 1.0 / 30.0 {
             bevy::log::warn!("Ignoring a large step size equal to {}", dt);
             for mut physics_object in query.iter_mut() {

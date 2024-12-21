@@ -19,20 +19,20 @@ struct TotalEnergy {
 }
 
 fn add_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        projection: OrthographicProjection {
+    commands.spawn((
+        Camera2d,
+        OrthographicProjection {
             far: 1000.,
             near: -1000.,
             scale: 4.0,
-            ..Default::default()
+            ..OrthographicProjection::default_2d()
         },
-        ..Default::default()
-    });
+    ));
 }
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(1.0, 1.0, 1.0)))
+        .insert_resource(ClearColor(Color::srgb(1.0, 1.0, 1.0)))
         .insert_resource(TotalEnergy {
             initial: None,
             current: None,
@@ -50,6 +50,5 @@ fn main() {
         }))
         .add_plugins((PhysicsPlugin, DebugPlugin))
         .add_systems(Startup, (add_entities, add_camera))
-        .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }

@@ -19,12 +19,9 @@ fn add_physics_cube(
             Rotation(0.0),
             Size { width, height },
             PhysicsObject::at_rest(mass),
-            bevy::sprite::SpriteBundle {
-                texture: asset_server.load("happy-tree.png"),
-                sprite: Sprite {
-                    custom_size: Some(Vec2::new(1.0, 1.0)),
-                    ..Default::default()
-                },
+            Sprite {
+                image: asset_server.load("happy-tree.png"),
+                custom_size: Some(Vec2::new(1.0, 1.0)),
                 ..Default::default()
             },
         ))
@@ -56,12 +53,9 @@ fn add_spring(
             equilibrium_length: 1.0,
         },
         Connection { entity1, entity2 },
-        bevy::sprite::MaterialMesh2dBundle {
-            mesh: meshes.add(spring.get_mesh()).into(),
-            material: materials.add(Color::BLACK),
-            transform: Transform::from_xyz(0.0, 0.0, -1.0),
-            ..Default::default()
-        },
+        Mesh2d(meshes.add(spring.get_mesh())),
+        MeshMaterial2d(materials.add(Color::BLACK)),
+        Transform::from_xyz(0.0, 0.0, -1.0),
     ));
 }
 

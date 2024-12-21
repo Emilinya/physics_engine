@@ -85,7 +85,7 @@ fn update_spring(
         let length = between.length();
 
         position.0 = midpoint;
-        rotation.0 = DVec2::angle_between(DVec2::X, between);
+        rotation.0 = DVec2::angle_to(DVec2::X, between);
         size.width = length;
     }
 }
@@ -137,7 +137,7 @@ fn calculate_total_energy(
 
     if let Some(previous_value) = total_energy_resource.current {
         let ema_smoothing_factor = 0.2;
-        let delta = timer.delta_seconds_f64();
+        let delta = timer.delta_secs_f64();
         let alpha = (delta / ema_smoothing_factor).clamp(0.0, 1.0);
         total_energy_resource.current =
             Some(previous_value + alpha * (total_energy - previous_value));
