@@ -5,3 +5,5 @@
 /wasm
 /test
 /__pycache__
+
+physics_engine

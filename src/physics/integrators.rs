@@ -17,8 +17,8 @@ pub enum Integrators {
 impl Integrator for Integrators {
     fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
         match self {
-            Integrators::EulerChromer => EulerChromerStep.build(app, apply_forces),
-            Integrators::VelocityVerlet => VelocityVerletStep.build(app, apply_forces),
+            Self::EulerChromer => EulerChromerStep.build(app, apply_forces),
+            Self::VelocityVerlet => VelocityVerletStep.build(app, apply_forces),
         };
     }
 }

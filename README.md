@@ -1,0 +1,1 @@
+[![Rust](https://github.com/Emilinya/physics_engine/actions/workflows/rust-ci.yml/badge.svg)](https://github.com/Emilinya/physics_engine/actions/workflows/rust-ci.yml)

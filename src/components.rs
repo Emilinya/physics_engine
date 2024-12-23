@@ -31,7 +31,7 @@ pub struct PhysicsObject {
 
 impl PhysicsObject {
     pub fn at_rest(mass: f64) -> Self {
-        PhysicsObject {
+        Self {
             velocity: DVec2::ZERO,
             acceleration: DVec2::ZERO,
             mass,
