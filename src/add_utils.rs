@@ -1,12 +1,13 @@
 use crate::components::*;
 use crate::shapes::shape::Shape;
 
-use bevy::math::{DVec2, Vec2};
+use bevy::math::DVec2;
 use bevy::prelude::*;
 
 fn add_physics_cube(
     commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
     position: DVec2,
     mass: f64,
     width: f64,
@@ -16,14 +17,10 @@ fn add_physics_cube(
         .spawn((
             Square,
             Position(position),
-            Rotation(0.0),
             Size { width, height },
             PhysicsObject::at_rest(mass),
-            Sprite {
-                image: asset_server.load("happy-tree.png"),
-                custom_size: Some(Vec2::new(1.0, 1.0)),
-                ..Default::default()
-            },
+            Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
+            MeshMaterial2d(materials.add(Color::srgb_u8(10, 10, 200))),
         ))
         .id()
 }
@@ -42,8 +39,6 @@ fn add_spring(
     };
     commands.spawn((
         Spring,
-        Position(DVec2::ZERO),
-        Rotation(0.0),
         Size {
             width: 0.0,
             height: width,
@@ -63,15 +58,15 @@ pub fn add_entities(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    asset_server: Res<AssetServer>,
 ) {
     let fixed_point = commands.spawn(Position(DVec2::new(0.0, 2.0))).id();
     let mut entity1 = fixed_point;
 
-    for i in 0..4 {
+    for i in 0..3 {
         let entity2 = add_physics_cube(
             &mut commands,
-            &asset_server,
+            &mut meshes,
+            &mut materials,
             DVec2::new(i as f64 + 1.0, 2.0),
             0.1,
             0.5,

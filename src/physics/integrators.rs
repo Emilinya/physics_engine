@@ -1,7 +1,7 @@
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
-use crate::components::*;
+use crate::components::{PhysicsObject, Position};
 
 pub trait Integrator {
     fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy);
@@ -29,13 +29,13 @@ impl EulerChromerStep {
         let dt = timer.delta_secs_f64();
         if dt > 1.0 / 30.0 {
             bevy::log::warn!("Ignoring a large step size equal to {}", dt);
-            for (_, mut physics_object) in query.iter_mut() {
+            for (_, mut physics_object) in &mut query {
                 physics_object.acceleration = DVec2::ZERO;
             }
             return;
         }
 
-        for (mut position, mut physics_object) in query.iter_mut() {
+        for (mut position, mut physics_object) in &mut query {
             let acceleration = physics_object.acceleration;
             physics_object.acceleration = DVec2::ZERO;
 
@@ -47,11 +47,7 @@ impl EulerChromerStep {
 
 impl Integrator for EulerChromerStep {
     fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
-        app.add_systems(
-            FixedUpdate,
-            // Use velocity verlet integration
-            (apply_forces, Self::step).chain(),
-        );
+        app.add_systems(FixedUpdate, (apply_forces, Self::step).chain());
     }
 }
 
@@ -64,7 +60,7 @@ impl VelocityVerletStep {
             return;
         }
 
-        for (mut position, mut physics_object) in query.iter_mut() {
+        for (mut position, mut physics_object) in &mut query {
             let acceleration = physics_object.acceleration;
             physics_object.acceleration = DVec2::ZERO;
 
@@ -79,13 +75,13 @@ impl VelocityVerletStep {
         let dt = timer.delta_secs_f64();
         if dt > 1.0 / 30.0 {
             bevy::log::warn!("Ignoring a large step size equal to {}", dt);
-            for mut physics_object in query.iter_mut() {
+            for mut physics_object in &mut query {
                 physics_object.acceleration = DVec2::ZERO;
             }
             return;
         }
 
-        for mut physics_object in query.iter_mut() {
+        for mut physics_object in &mut query {
             let acceleration = physics_object.acceleration;
             physics_object.velocity += 0.5 * acceleration * dt;
         }
@@ -96,7 +92,6 @@ impl Integrator for VelocityVerletStep {
     fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
         app.add_systems(PostStartup, apply_forces).add_systems(
             FixedUpdate,
-            // Use velocity verlet integration
             (
                 Self::update_positions,
                 apply_forces,
