@@ -4,6 +4,23 @@ use crate::shapes::shape::Shape;
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
+use super::{despawn_scene, GameScene};
+
+#[derive(Component)]
+struct SpringPendulumEntity;
+
+pub struct SpringPendulumPlugin;
+
+impl Plugin for SpringPendulumPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameScene::SpringPendulum), spring_pendulum_setup)
+            .add_systems(
+                OnExit(GameScene::SpringPendulum),
+                despawn_scene::<SpringPendulumEntity>,
+            );
+    }
+}
+
 fn add_physics_cube(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -15,6 +32,7 @@ fn add_physics_cube(
 ) -> Entity {
     commands
         .spawn((
+            SpringPendulumEntity,
             Square,
             Position(position),
             Size { width, height },
@@ -38,6 +56,7 @@ fn add_spring(
         coil_diameter: 0.01,
     };
     commands.spawn((
+        SpringPendulumEntity,
         Spring,
         Size {
             width: 0.0,
@@ -54,12 +73,16 @@ fn add_spring(
     ));
 }
 
-pub fn add_entities(
+pub fn spring_pendulum_setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let fixed_point = commands.spawn(Position(DVec2::new(0.0, 2.0))).id();
+    debug!("Setting up spring pendulum");
+
+    let fixed_point = commands
+        .spawn((SpringPendulumEntity, Position(DVec2::new(0.0, 2.0))))
+        .id();
     let mut entity1 = fixed_point;
 
     for i in 0..3 {

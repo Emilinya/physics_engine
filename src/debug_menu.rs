@@ -3,7 +3,7 @@ use bevy::diagnostic::{
 };
 use bevy::prelude::*;
 
-use crate::TotalEnergy;
+use crate::Energy;
 
 #[derive(Component)]
 struct DebugRoot;
@@ -12,10 +12,7 @@ struct DebugRoot;
 struct FpsText;
 
 #[derive(Component)]
-struct InitialEnergyText;
-
-#[derive(Component)]
-struct CurrentEnergyText;
+struct EnergyText;
 
 pub struct DebugPlugin;
 
@@ -71,13 +68,12 @@ fn setup_fps_counter(mut commands: Commands) {
         ))
         .id();
 
-    let fps_text = spawn_debug_text(&mut commands, FpsText, " FPS: ");
-    let initial_energy_text = spawn_debug_text(&mut commands, InitialEnergyText, "E(0): ");
-    let energy_text = spawn_debug_text(&mut commands, CurrentEnergyText, "E(t): ");
+    let fps_text = spawn_debug_text(&mut commands, FpsText, "FPS: ");
+    let initial_energy_text = spawn_debug_text(&mut commands, EnergyText, "  E: ");
 
     commands
         .entity(root)
-        .add_children(&[fps_text, initial_energy_text, energy_text]);
+        .add_children(&[fps_text, initial_energy_text]);
 }
 
 fn update_fps_text(
@@ -97,22 +93,8 @@ fn update_fps_text(
 }
 
 #[allow(clippy::type_complexity)]
-fn update_energy_text(
-    energy: Res<TotalEnergy>,
-    mut set: ParamSet<(
-        Query<&mut TextSpan, With<InitialEnergyText>>,
-        Query<&mut TextSpan, With<CurrentEnergyText>>,
-    )>,
-) {
-    for mut text in set.p0().iter_mut() {
-        if let Some(value) = energy.initial {
-            text.0 = format!("{value:.3}");
-        }
-    }
-
-    for mut text in set.p1().iter_mut() {
-        if let Some(value) = energy.current {
-            text.0 = format!("{value:.3}");
-        }
+fn update_energy_text(energy: Res<Energy>, mut query: Query<&mut TextSpan, With<EnergyText>>) {
+    for mut text in query.iter_mut() {
+        text.0 = format!("{:.3}", energy.0);
     }
 }
