@@ -3,7 +3,7 @@ mod debug_menu;
 mod physics;
 mod scenes;
 mod shapes;
-mod utils;
+mod spawners;
 
 use debug_menu::DebugPlugin;
 use physics::PhysicsPlugin;
@@ -49,7 +49,7 @@ fn main() {
         )
         .insert_resource(ClearColor(Color::WHITE))
         .insert_resource(Energy::default())
-        .insert_resource(Time::<Fixed>::from_hz(60.0))
+        .insert_resource(Time::<Fixed>::from_hz(600.0))
         .init_state::<GameScene>()
         .add_plugins((PhysicsPlugin, DebugPlugin, ScenePlugin))
         .add_systems(Startup, add_camera)

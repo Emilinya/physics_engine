@@ -21,6 +21,11 @@ pub fn calculate_total_energy(
     total_energy += gravitational_potential_energy(body_query);
     total_energy += spring_potential_energy(spring_query, position_query);
 
+    // this should hopefully not happen :)
+    if total_energy_resource.0.is_nan() {
+        total_energy_resource.0 = total_energy;
+    }
+
     // update total energy counter
     let previous_value = total_energy_resource.0;
     let ema_smoothing_factor = 0.1;

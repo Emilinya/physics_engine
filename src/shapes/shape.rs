@@ -4,11 +4,14 @@ use bevy::render::{
 
 pub trait Shape {
     fn get_mesh(&self) -> Mesh;
+
     fn get_vertices(&self) -> Vec<[f32; 2]>;
+
     fn get_uv_map(&self) -> Option<Vec<[f32; 2]>> {
         None
     }
 
+    /// Create `Mesh` with position, uv, and normals, but not indices.
     fn get_incomplete_mesh(&self) -> Mesh {
         let vertices = self.get_vertices();
 
@@ -42,6 +45,7 @@ pub trait Shape {
             [[0.0, 0.0, 1.0]].repeat(vertices.len()),
         )
     }
+
     // fn vertex_bounding_box(
     //     &self,
     //     entity: &Ref<Instance>,
@@ -69,6 +73,7 @@ pub trait Shape {
 
     //     (top_right, bottom_left)
     // }
+
     // fn get_bounding_box(
     //     &self,
     //     entity: &Ref<Instance>,

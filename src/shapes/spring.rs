@@ -96,6 +96,7 @@ impl Shape for Spring {
 
         points
     }
+
     fn get_mesh(&self) -> Mesh {
         let n = 20 * self.coil_count;
         let num_indices = 3 * (2 * n - 1);
@@ -119,5 +120,11 @@ impl Shape for Spring {
 
         self.get_incomplete_mesh()
             .with_inserted_indices(Indices::U32(indices))
+    }
+}
+
+impl From<Spring> for Mesh {
+    fn from(value: Spring) -> Self {
+        value.get_mesh()
     }
 }

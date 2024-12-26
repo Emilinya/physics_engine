@@ -21,10 +21,10 @@ build:
 
 .PHONY: build-wasm
 build-wasm:
-	$(SILENCE)cargo build --release --target wasm32-unknown-unknown
+	$(SILENCE)cargo build --profile wasm-release --target wasm32-unknown-unknown
 	$(SILENCE)wasm-bindgen --no-typescript --target web \
 	  --out-dir ./wasm/ --out-name "physics_engine" \
-      ./target/wasm32-unknown-unknown/release/physics_engine.wasm
+      ./target/wasm32-unknown-unknown/wasm-release/physics_engine.wasm
 
 .PHONY: format
 format:
@@ -32,11 +32,11 @@ format:
 
 .PHONY: check
 check:
-	$(SILENCE)cargo test
+	$(SILENCE)cargo test -q
 
 .PHONY: lint
 lint:
-	$(SILENCE)cargo clippy -- -W clippy::use_self $(CLIPPY_OPTS)
+	$(SILENCE)cargo clippy -q -- -W clippy::use_self $(CLIPPY_OPTS)
 
 .PHONY: lint-pedantic
 lint-pedantic:

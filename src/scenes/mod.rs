@@ -1,25 +1,47 @@
+mod bouncy_castle;
 mod select;
 mod spring_pendulum;
 
-use crate::utils::button::button_is_pressed;
+use bouncy_castle::BouncyCastlePlugin;
 use select::SelectPlugin;
 use spring_pendulum::SpringPendulumPlugin;
 
-use bevy::prelude::*;
+use std::fmt;
 
-// Enum that will be used as a global state for the game
-#[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
+use bevy::prelude::*;
+use strum::{EnumIter, IntoStaticStr};
+
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States, EnumIter, IntoStaticStr)]
 pub enum GameScene {
-    #[default]
     Select,
     SpringPendulum,
+    #[default]
+    BouncyCastle,
 }
+
+impl fmt::Display for GameScene {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Select => f.write_str("Select"),
+            Self::SpringPendulum => f.write_str("Spring Pendulum"),
+            Self::BouncyCastle => f.write_str("Bouncy Castle"),
+        }
+    }
+}
+
+#[derive(Component)]
+struct SceneButton(GameScene);
 
 pub struct ScenePlugin;
 
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((back_plugin, SelectPlugin, SpringPendulumPlugin));
+        app.add_plugins((
+            back_plugin,
+            SelectPlugin,
+            SpringPendulumPlugin,
+            BouncyCastlePlugin,
+        ));
     }
 }
 
@@ -31,15 +53,10 @@ pub fn despawn_scene<T: Component>(to_despawn: Query<Entity, With<T>>, mut comma
 
 fn back_plugin(app: &mut App) {
     app.add_systems(Startup, add_back_button)
-        .add_systems(Update, back_button_system);
+        .add_systems(Update, scene_button_system);
 }
 
-#[derive(Component)]
-struct BackButton;
-
 fn add_back_button(mut commands: Commands) {
-    debug!("Setting up select");
-
     commands
         .spawn((Node {
             padding: UiRect::all(Val::Px(10.0)),
@@ -52,7 +69,7 @@ fn add_back_button(mut commands: Commands) {
         .with_children(|parent| {
             parent
                 .spawn((
-                    BackButton,
+                    SceneButton(GameScene::Select),
                     Button,
                     Node {
                         width: Val::Auto,
@@ -77,12 +94,22 @@ fn add_back_button(mut commands: Commands) {
         });
 }
 
-#[allow(clippy::type_complexity)]
-fn back_button_system(
-    query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<BackButton>)>,
-    mut game_state: ResMut<NextState<GameScene>>,
+fn scene_button_system(
+    mut query: Query<(&Interaction, &SceneButton, &mut BorderColor), Changed<Interaction>>,
+    mut game_scene: ResMut<NextState<GameScene>>,
 ) {
-    if button_is_pressed(query) {
-        game_state.set(GameScene::Select);
+    for (interaction, scene, mut color) in query.iter_mut() {
+        match interaction {
+            Interaction::Pressed => {
+                *color = Color::srgb_u8(100, 100, 200).into();
+                game_scene.set(scene.0);
+            }
+            Interaction::Hovered => {
+                *color = Color::srgb_u8(150, 150, 150).into();
+            }
+            Interaction::None => {
+                *color = Color::BLACK.into();
+            }
+        }
     }
 }
