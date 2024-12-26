@@ -9,12 +9,19 @@ use debug_menu::DebugPlugin;
 use physics::PhysicsPlugin;
 use scenes::{GameScene, ScenePlugin};
 
+use std::ffi::OsString;
+use std::fs::File;
+
 use bevy::log::{Level, LogPlugin};
 use bevy::prelude::*;
 use bevy::window::{MonitorSelection, WindowPosition, WindowResolution};
+use clap::Parser;
 
 #[derive(Resource, Default)]
 struct Energy(f64);
+
+#[derive(Resource, Default)]
+struct EnergyFile(Option<OsString>);
 
 fn add_camera(mut commands: Commands) {
     commands.spawn((
@@ -26,7 +33,22 @@ fn add_camera(mut commands: Commands) {
     ));
 }
 
+#[derive(Parser, Debug)]
+struct Args {
+    /// File to save energy data to. If not set, no data is saved
+    #[arg(short, long)]
+    energy_file: Option<OsString>,
+}
+
 fn main() {
+    let args = Args::parse();
+
+    if let Some(file) = &args.energy_file {
+        if let Err(err) = File::create(file) {
+            panic!("Failed to create energy file: {}", err);
+        }
+    }
+
     App::new()
         .add_plugins(
             DefaultPlugins
@@ -49,7 +71,8 @@ fn main() {
         )
         .insert_resource(ClearColor(Color::WHITE))
         .insert_resource(Energy::default())
-        .insert_resource(Time::<Fixed>::from_hz(600.0))
+        .insert_resource(Time::<Fixed>::from_hz(60.0))
+        .insert_resource(EnergyFile(args.energy_file))
         .init_state::<GameScene>()
         .add_plugins((PhysicsPlugin, DebugPlugin, ScenePlugin))
         .add_systems(Startup, add_camera)
