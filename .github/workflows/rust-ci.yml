@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: libasound2-dev libudev-dev
+          version: 1.0
       - uses: Swatinem/rust-cache@v2
-      - run: sudo apt install libasound2-dev libudev-dev
       - run: VERBOSE=1 make ci

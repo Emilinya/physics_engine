@@ -45,6 +45,7 @@ lint-pedantic:
 
 .PHONY: ci
 ci:
+	$(SILENCE)make format
 	$(SILENCE)make build
 	$(SILENCE)make lint CLIPPY_OPTS="-D warnings"
 	$(SILENCE)make check
