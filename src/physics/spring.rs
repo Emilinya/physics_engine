@@ -6,20 +6,15 @@ use crate::components::{Connection, PhysicsObject, Position, Rotation, Size, Spr
 fn get_spring_connection_positions(
     connection: &Connection,
     position_query: &Query<&Position, Without<Spring>>,
-) -> (DVec2, DVec2) {
-    const SPRING_CONNECTION_ERROR: &str =
-        "a connection is pointing to an entity without a position!";
+) -> Option<(DVec2, DVec2)> {
+    let Ok(pos1) = position_query.get(connection.entity1).map(|p| p.0) else {
+        return None;
+    };
+    let Ok(pos2) = position_query.get(connection.entity2).map(|p| p.0) else {
+        return None;
+    };
 
-    let pos1 = position_query
-        .get(connection.entity1)
-        .expect(SPRING_CONNECTION_ERROR)
-        .0;
-    let pos2 = position_query
-        .get(connection.entity2)
-        .expect(SPRING_CONNECTION_ERROR)
-        .0;
-
-    (pos1, pos2)
+    Some((pos1, pos2))
 }
 
 pub fn apply_spring_force(
@@ -28,7 +23,10 @@ pub fn apply_spring_force(
     mut physics_query: Query<&mut PhysicsObject>,
 ) {
     for (spring_force, connection) in &spring_query {
-        let (pos1, pos2) = get_spring_connection_positions(connection, &position_query);
+        let Some((pos1, pos2)) = get_spring_connection_positions(connection, &position_query)
+        else {
+            continue;
+        };
 
         let between = pos2 - pos1;
         let length = between.length();
@@ -52,11 +50,20 @@ pub fn apply_spring_force(
 }
 
 pub fn update_spring(
-    mut spring_query: Query<(&Connection, &mut Position, &mut Size, &mut Rotation), With<Spring>>,
+    mut commands: Commands,
+    mut spring_query: Query<
+        (Entity, &Connection, &mut Position, &mut Size, &mut Rotation),
+        With<Spring>,
+    >,
     position_query: Query<&Position, Without<Spring>>,
 ) {
-    for (connection, mut position, mut size, mut rotation) in &mut spring_query {
-        let (pos1, pos2) = get_spring_connection_positions(connection, &position_query);
+    for (entity, connection, mut position, mut size, mut rotation) in &mut spring_query {
+        let Some((pos1, pos2)) = get_spring_connection_positions(connection, &position_query)
+        else {
+            debug!("Despawning spring with invalid connections");
+            commands.entity(entity).despawn();
+            continue;
+        };
 
         let midpoint = (pos1 + pos2) / 2.0;
         let between = pos1 - pos2;
@@ -74,7 +81,10 @@ pub fn spring_potential_energy(
 ) -> f64 {
     let mut total_energy = 0.0;
     for (spring_force, connection) in &spring_query {
-        let (pos1, pos2) = get_spring_connection_positions(connection, &position_query);
+        let Some((pos1, pos2)) = get_spring_connection_positions(connection, &position_query)
+        else {
+            continue;
+        };
 
         let elongation = (pos2 - pos1).length() - spring_force.equilibrium_length;
         total_energy += 0.5 * spring_force.spring_constant * elongation.powi(2);

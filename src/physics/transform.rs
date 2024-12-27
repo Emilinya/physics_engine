@@ -6,11 +6,11 @@ pub fn update_transform(
     camera_query: Query<&Camera>,
     mut transform_query: Query<(&mut Transform, &Position, &Size, &Rotation)>,
 ) {
-    let camera = camera_query.get_single().unwrap();
+    let camera = camera_query.single();
     let viewport_size = camera
         .logical_viewport_size()
         .expect("Can't get viewport size?!");
-    let scale = viewport_size.x.min(viewport_size.y);
+    let scale = viewport_size.min_element();
 
     for (mut transform, position, size, rotation) in &mut transform_query {
         let z = transform.translation.z;

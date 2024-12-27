@@ -120,7 +120,7 @@ pub fn bouncy_castle_setup(
     spawn_spring(
         right_square_top,
         left_square_top,
-        1.0,
+        10.0,
         2.0,
         &mut commands,
         &mut meshes,
@@ -162,8 +162,27 @@ pub fn bouncy_castle_setup(
     spawn_spring(
         right_square_bottom,
         left_square_bottom,
-        1.0,
+        10.0,
         2.0,
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+    );
+
+    spawn_spring(
+        right_square_top,
+        left_square_bottom,
+        10.0,
+        5f64.sqrt(),
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+    );
+    spawn_spring(
+        left_square_top,
+        right_square_bottom,
+        10.0,
+        5f64.sqrt(),
         &mut commands,
         &mut meshes,
         &mut materials,

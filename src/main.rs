@@ -1,11 +1,13 @@
 mod components;
 mod debug_menu;
+mod mouse;
 mod physics;
 mod scenes;
 mod shapes;
 mod spawners;
 
 use debug_menu::DebugPlugin;
+use mouse::InteractivityPlugin;
 use physics::PhysicsPlugin;
 use scenes::{GameScene, ScenePlugin};
 
@@ -74,7 +76,7 @@ fn main() {
         .insert_resource(Time::<Fixed>::from_hz(60.0))
         .insert_resource(EnergyFile(args.energy_file))
         .init_state::<GameScene>()
-        .add_plugins((PhysicsPlugin, DebugPlugin, ScenePlugin))
+        .add_plugins((PhysicsPlugin, DebugPlugin, ScenePlugin, InteractivityPlugin))
         .add_systems(Startup, add_camera)
         .run();
 }
