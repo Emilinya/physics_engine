@@ -47,7 +47,7 @@ pub fn spring_pendulum_setup(
             .id();
 
         Spawner::new(SpringPendulumEntity, &mut commands)
-            .with_bundle(spring_bundle(0.1, entity1, entity2, 20.0, 1.0))
+            .with_bundle(spring_bundle(0.1, entity1, entity2, 0.0, 20.0, 1.0))
             .with_mesh(
                 spring::Spring {
                     coil_count: 20,

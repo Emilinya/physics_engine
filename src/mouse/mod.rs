@@ -56,6 +56,7 @@ fn create_mouse_spring(
             0.1,
             mouse_entity,
             clicked_entity,
+            1.0,
             50.0,
             between,
         ))

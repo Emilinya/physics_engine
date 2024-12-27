@@ -32,19 +32,21 @@ pub fn apply_spring_force(
         let length = between.length();
         let direction = between / length;
 
-        if let Ok(mut phy1) = physics_query.get_mut(connection.entity1) {
-            let mass = phy1.mass;
-            phy1.acceleration += spring_force.spring_constant
-                * direction
-                * (length - spring_force.equilibrium_length)
-                / mass;
-        }
-        if let Ok(mut phy2) = physics_query.get_mut(connection.entity2) {
-            let mass = phy2.mass;
-            phy2.acceleration -= spring_force.spring_constant
-                * direction
-                * (length - spring_force.equilibrium_length)
-                / mass;
+        let displacement = length - spring_force.equilibrium_length;
+        let force = spring_force.spring_constant * direction * displacement;
+
+        for entity in [connection.entity1, connection.entity2] {
+            let Ok(mut physics) = physics_query.get_mut(entity) else {
+                continue;
+            };
+            let mass = physics.mass;
+            let damping = spring_force.damping * physics.velocity;
+
+            if entity == connection.entity1 {
+                physics.acceleration += (force - damping) / mass;
+            } else {
+                physics.acceleration += (-force - damping) / mass;
+            }
         }
     }
 }

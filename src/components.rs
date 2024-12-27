@@ -41,6 +41,7 @@ impl PhysicsObject {
 
 #[derive(Component)]
 pub struct SpringForce {
+    pub damping: f64,
     pub spring_constant: f64,
     pub equilibrium_length: f64,
 }
@@ -63,6 +64,7 @@ impl Default for Size {
 impl Default for SpringForce {
     fn default() -> Self {
         Self {
+            damping: 0.0,
             spring_constant: 1.0,
             equilibrium_length: 1.0,
         }

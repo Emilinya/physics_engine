@@ -45,7 +45,9 @@ fn spawn_spring(
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) -> Entity {
     Spawner::new(BouncyCastleEntity, commands)
-        .with_bundle(spring_bundle(0.1, entity1, entity2, strength, length))
+        .with_bundle(spring_bundle(
+            0.1, entity1, entity2, 0.001, strength, length,
+        ))
         .with_mesh(
             spring::Spring {
                 coil_count: 20,
