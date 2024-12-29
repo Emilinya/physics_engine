@@ -1,12 +1,14 @@
 use core::f32::consts::PI;
 
-use crate::shapes::shape::Shape;
+use crate::components::{Position, Rotation, Size};
+use crate::shapes::{Shape, ShapeImpl};
 
+use bevy::math::Rect;
 use bevy::render::mesh::{Indices, Mesh};
 
 pub struct NGon<const N: u8>;
 
-impl<const N: u8> Shape for NGon<N> {
+impl<const N: u8> ShapeImpl for NGon<N> {
     fn get_vertices(&self) -> Vec<[f32; 2]> {
         let mut vertices = Vec::with_capacity(N as usize);
         let delta_angle = (2.0 * PI) / N as f32;
@@ -33,6 +35,17 @@ impl<const N: u8> Shape for NGon<N> {
         }
         self.get_incomplete_mesh()
             .with_inserted_indices(Indices::U16(indices))
+    }
+
+    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+        if N < 10 {
+            // With a small number of vertices, using a
+            // specialized bounding box is good
+            self.vertex_bounding_box(position, size, rotation)
+        } else {
+            // With a large number of vertices we are basically a circle
+            Shape::Circle.get_bounding_box(position, size, rotation)
+        }
     }
 }
 

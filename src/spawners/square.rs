@@ -7,11 +7,11 @@ pub fn physics_square_bundle(
     width: f64,
     height: f64,
     position: DVec2,
-) -> (Square, Position, Size, PhysicsObject) {
+) -> (Position, Size, PhysicsObject, Tangible) {
     (
-        Square,
         Position(position),
         Size { width, height },
         PhysicsObject::at_rest(mass),
+        Tangible,
     )
 }

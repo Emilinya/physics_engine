@@ -1,5 +1,5 @@
 use crate::components::*;
-use crate::shapes::{spring, square};
+use crate::shapes::{Shape, SpringShape};
 
 use bevy::math::DVec2;
 use bevy::prelude::*;
@@ -42,17 +42,17 @@ pub fn spring_pendulum_setup(
                 0.5,
                 DVec2::new(i as f64 + 1.0, 2.0),
             ))
-            .with_mesh(square::Square, &mut meshes)
+            .with_shape(Shape::Square, &mut meshes)
             .with_color(Color::srgb_u8(10, 10, 200), &mut materials)
             .id();
 
         Spawner::new(SpringPendulumEntity, &mut commands)
             .with_bundle(spring_bundle(0.1, entity1, entity2, 0.0, 20.0, 1.0))
-            .with_mesh(
-                spring::Spring {
+            .with_shape(
+                Shape::Spring(SpringShape {
                     coil_count: 20,
                     coil_diameter: 0.01,
-                },
+                }),
                 &mut meshes,
             )
             .with_color(Color::BLACK, &mut materials)

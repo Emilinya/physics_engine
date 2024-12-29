@@ -1,7 +1,15 @@
-use crate::shapes::shape::Shape;
+use crate::components::{Position, Rotation, Size};
+use crate::shapes::{Shape, ShapeImpl};
 
+use bevy::math::Rect;
 use bevy::render::mesh::{Indices, Mesh};
+
 use std::f32::consts::PI;
+
+pub struct Spring {
+    pub coil_count: u32,
+    pub coil_diameter: f32,
+}
 
 fn get_f_fp_nfp(t: f32, cc: f32, d: f32) -> (f32, f32, f32) {
     let (sin, cos) = (cc * 2.0 * PI * t).sin_cos();
@@ -65,12 +73,7 @@ fn curve_to_function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
     interpolate(x, &points)
 }
 
-pub struct Spring {
-    pub coil_count: u32,
-    pub coil_diameter: f32,
-}
-
-impl Shape for Spring {
+impl ShapeImpl for Spring {
     fn get_vertices(&self) -> Vec<[f32; 2]> {
         let n = 20 * self.coil_count;
         let delta = 0.01 / (self.coil_diameter.sqrt() * self.coil_count.pow(2) as f32);
@@ -120,6 +123,11 @@ impl Shape for Spring {
 
         self.get_incomplete_mesh()
             .with_inserted_indices(Indices::U32(indices))
+    }
+
+    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+        // a spring is square-like, so we can use the bounding box of a square
+        Shape::Square.get_bounding_box(position, size, rotation)
     }
 }
 

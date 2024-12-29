@@ -1,27 +1,26 @@
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
-#[derive(Component)]
-#[require(Position, Rotation, Size)]
-pub struct Square;
-
-#[derive(Component)]
-#[require(Position, Rotation, Size, SpringForce, Connection)]
+#[derive(Component, Clone, Copy)]
+#[require(SpringForce, Connection)]
 pub struct Spring;
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone, Copy)]
 pub struct Position(pub DVec2);
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone, Copy)]
 pub struct Rotation(pub f64);
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
+pub struct Tangible;
+
+#[derive(Component, Clone, Copy)]
 pub struct Size {
     pub width: f64,
     pub height: f64,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 #[require(Position)]
 pub struct PhysicsObject {
     pub velocity: DVec2,
@@ -39,14 +38,14 @@ impl PhysicsObject {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct SpringForce {
     pub damping: f64,
     pub spring_constant: f64,
     pub equilibrium_length: f64,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct Connection {
     pub entity1: Entity,
     pub entity2: Entity,
@@ -77,5 +76,11 @@ impl Default for Connection {
             entity1: Entity::PLACEHOLDER,
             entity2: Entity::PLACEHOLDER,
         }
+    }
+}
+
+impl From<&Size> for DVec2 {
+    fn from(value: &Size) -> Self {
+        Self::new(value.width, value.height)
     }
 }

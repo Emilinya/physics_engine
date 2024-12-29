@@ -14,9 +14,9 @@ struct FpsText;
 #[derive(Component)]
 struct EnergyText;
 
-pub struct DebugPlugin;
+pub struct DebugInfoPlugin;
 
-impl Plugin for DebugPlugin {
+impl Plugin for DebugInfoPlugin {
     fn build(&self, app: &mut App) {
         app.register_diagnostic(
             Diagnostic::new(FrameTimeDiagnosticsPlugin::FPS).with_smoothing_factor(0.2),

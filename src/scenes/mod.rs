@@ -1,9 +1,11 @@
 mod bouncy_castle;
 mod select;
+mod shapes;
 mod spring_pendulum;
 
 use bouncy_castle::BouncyCastlePlugin;
 use select::SelectPlugin;
+use shapes::ShapesPlugin;
 use spring_pendulum::SpringPendulumPlugin;
 
 use std::fmt;
@@ -13,10 +15,11 @@ use strum::{EnumIter, IntoStaticStr};
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States, EnumIter, IntoStaticStr)]
 pub enum GameScene {
+    #[default]
     Select,
     SpringPendulum,
-    #[default]
     BouncyCastle,
+    Shapes,
 }
 
 impl fmt::Display for GameScene {
@@ -25,6 +28,7 @@ impl fmt::Display for GameScene {
             Self::Select => f.write_str("Select"),
             Self::SpringPendulum => f.write_str("Spring Pendulum"),
             Self::BouncyCastle => f.write_str("Bouncy Castle"),
+            Self::Shapes => f.write_str("Shapes"),
         }
     }
 }
@@ -41,6 +45,7 @@ impl Plugin for ScenePlugin {
             SelectPlugin,
             SpringPendulumPlugin,
             BouncyCastlePlugin,
+            ShapesPlugin,
         ));
     }
 }

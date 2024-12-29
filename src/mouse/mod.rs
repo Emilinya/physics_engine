@@ -1,5 +1,5 @@
 use crate::components::*;
-use crate::shapes::spring;
+use crate::shapes::{Shape, SpringShape};
 use crate::spawners::{spring::spring_bundle, Spawner};
 
 use bevy::input::common_conditions::*;
@@ -60,11 +60,11 @@ fn create_mouse_spring(
             50.0,
             between,
         ))
-        .with_mesh(
-            spring::Spring {
+        .with_shape(
+            Shape::Spring(SpringShape {
                 coil_count: 20,
                 coil_diameter: 0.01,
-            },
+            }),
             &mut meshes,
         )
         .with_color(Color::srgb_u8(0, 100, 200), &mut materials)

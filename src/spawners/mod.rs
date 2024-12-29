@@ -1,6 +1,8 @@
 pub mod spring;
 pub mod square;
 
+use crate::shapes::{Shape, ShapeImpl};
+
 use bevy::asset::AssetPath;
 use bevy::prelude::*;
 
@@ -18,6 +20,12 @@ impl<'a, 'w, 's> Spawner<'a, 'w, 's> {
     pub fn with_bundle(self, bundle: impl Bundle) -> Self {
         self.commands.entity(self.entity).insert(bundle);
         self
+    }
+
+    pub fn with_shape(self, shape: Shape, meshes: &mut ResMut<Assets<Mesh>>) -> Self {
+        let spawner = self.with_mesh(shape.get_mesh(), meshes);
+        spawner.commands.entity(spawner.entity).insert(shape);
+        spawner
     }
 
     pub fn with_mesh(self, mesh: impl Into<Mesh>, meshes: &mut ResMut<Assets<Mesh>>) -> Self {

@@ -1,5 +1,5 @@
 use crate::components::*;
-use crate::shapes::{spring, square};
+use crate::shapes::{Shape, SpringShape};
 
 use bevy::math::DVec2;
 use bevy::prelude::*;
@@ -30,7 +30,7 @@ fn spawn_square(
 ) -> Entity {
     Spawner::new(BouncyCastleEntity, commands)
         .with_bundle(physics_square_bundle(0.1, 0.5, 0.5, position))
-        .with_mesh(square::Square, meshes)
+        .with_shape(Shape::Square, meshes)
         .with_color(Color::srgb_u8(150, 50, 100), materials)
         .id()
 }
@@ -48,11 +48,11 @@ fn spawn_spring(
         .with_bundle(spring_bundle(
             0.1, entity1, entity2, 0.001, strength, length,
         ))
-        .with_mesh(
-            spring::Spring {
+        .with_shape(
+            Shape::Spring(SpringShape {
                 coil_count: 20,
                 coil_diameter: 0.01,
-            },
+            }),
             meshes,
         )
         .with_color(Color::srgb_u8(0, 100, 200), materials)
