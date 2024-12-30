@@ -14,7 +14,7 @@ use bevy::render::{
 use {circle::Circle, ngon::NGon, spring::Spring, square::Square};
 
 #[allow(dead_code)]
-#[derive(Component)]
+#[derive(Component, Debug, Clone, Copy)]
 #[require(Position, Rotation, Size)]
 pub enum Shape {
     Spring(Spring),
@@ -28,7 +28,7 @@ pub enum Shape {
 }
 
 impl Shape {
-    fn to_shape(&self) -> &dyn ShapeImpl {
+    fn get_shape(&self) -> &dyn ShapeImpl {
         match self {
             Self::Spring(spring) => spring,
             Self::Circle => &Circle,
@@ -44,15 +44,15 @@ impl Shape {
 
 impl ShapeImpl for Shape {
     fn get_vertices(&self) -> Vec<[f32; 2]> {
-        self.to_shape().get_vertices()
+        self.get_shape().get_vertices()
     }
 
     fn get_mesh(&self) -> Mesh {
-        self.to_shape().get_mesh()
+        self.get_shape().get_mesh()
     }
 
     fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
-        self.to_shape().get_bounding_box(position, size, rotation)
+        self.get_shape().get_bounding_box(position, size, rotation)
     }
 }
 

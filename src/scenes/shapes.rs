@@ -51,18 +51,20 @@ pub fn shapes_setup(
     let start = -((shapes.len() - 1) as f64 * 0.5 * step_size);
 
     for (i, (color, shape)) in zip(colors, shapes).enumerate() {
-        Spawner::new(ShapesEntity, &mut commands)
-            .with_bundle((
-                Tangible,
-                Size {
-                    width: size,
-                    height: size,
-                },
-                Position(DVec2::new(start + step_size * i as f64, 0.0)),
-                Rotation(0.0),
-            ))
-            .with_shape(shape, &mut meshes)
-            .with_color(Color::from(color), &mut materials);
+        for (j, ratio) in [1.0, 0.5].iter().enumerate() {
+            Spawner::new(ShapesEntity, &mut commands)
+                .with_bundle((
+                    Tangible,
+                    Size {
+                        width: size * ratio,
+                        height: size,
+                    },
+                    Position(DVec2::new(start + step_size * i as f64, j as f64 - 0.5)),
+                    Rotation(0.0),
+                ))
+                .with_shape(shape, &mut meshes)
+                .with_color(Color::from(color), &mut materials);
+        }
     }
 }
 

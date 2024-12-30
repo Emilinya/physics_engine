@@ -1,9 +1,10 @@
 use crate::components::{Position, Rotation, Size};
 use crate::shapes::ShapeImpl;
 
-use bevy::math::{DVec2, Rect};
+use bevy::math::{DVec2, Rect, Vec2};
 use bevy::render::mesh::{Indices, Mesh};
 
+#[derive(Debug, Clone, Copy)]
 pub struct Square;
 
 impl ShapeImpl for Square {
@@ -23,13 +24,13 @@ impl ShapeImpl for Square {
         }
 
         let (sin, cos) = rotation.0.sin_cos();
-
         let bb_width = size.width * cos.abs() + size.height * sin.abs();
         let bb_height = size.width * sin.abs() + size.height * cos.abs();
 
-        let top_right = position.0 + DVec2::new(bb_width / 2.0, bb_height / 2.0);
-        let bottom_left = position.0 + DVec2::new(-bb_width / 2.0, -bb_height / 2.0);
-        Rect::from_corners(top_right.as_vec2(), bottom_left.as_vec2())
+        Rect::from_center_size(
+            position.0.as_vec2(),
+            Vec2::new(bb_width as f32, bb_height as f32),
+        )
     }
 }
 

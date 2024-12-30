@@ -6,6 +6,7 @@ use bevy::render::mesh::{Indices, Mesh};
 
 use std::f32::consts::PI;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Spring {
     pub coil_count: u32,
     pub coil_diameter: f32,

@@ -6,6 +6,7 @@ use crate::shapes::{Shape, ShapeImpl};
 use bevy::math::Rect;
 use bevy::render::mesh::{Indices, Mesh};
 
+#[derive(Debug, Clone, Copy)]
 pub struct NGon<const N: u8>;
 
 impl<const N: u8> ShapeImpl for NGon<N> {
