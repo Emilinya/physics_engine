@@ -1,7 +1,8 @@
 use crate::components::{Position, Rotation, Size};
 use crate::shapes::ShapeImpl;
+use crate::utils::BoundingBox;
 
-use bevy::math::{DVec2, Rect, Vec2};
+use bevy::math::DVec2;
 use bevy::render::mesh::{Indices, Mesh};
 
 #[derive(Debug, Clone, Copy)]
@@ -17,20 +18,17 @@ impl ShapeImpl for Square {
             .with_inserted_indices(Indices::U16(vec![0, 1, 2, 0, 3, 2]))
     }
 
-    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
         if rotation.0.abs() < 1e-6 {
             // But doctor, I am bounding box
-            return Rect::from_center_size(position.0.as_vec2(), DVec2::from(size).as_vec2());
+            return BoundingBox::from_center_size(*position, DVec2::from(size));
         }
 
-        let (sin, cos) = rotation.0.sin_cos();
+        let (sin, cos) = rotation.sin_cos();
         let bb_width = size.width * cos.abs() + size.height * sin.abs();
         let bb_height = size.width * sin.abs() + size.height * cos.abs();
 
-        Rect::from_center_size(
-            position.0.as_vec2(),
-            Vec2::new(bb_width as f32, bb_height as f32),
-        )
+        BoundingBox::from_center_size(*position, DVec2::new(bb_width, bb_height))
     }
 }
 

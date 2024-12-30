@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
@@ -8,8 +10,34 @@ pub struct Spring;
 #[derive(Component, Default, Clone, Copy)]
 pub struct Position(pub DVec2);
 
+impl Deref for Position {
+    type Target = DVec2;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<Position> for DVec2 {
+    fn from(value: Position) -> Self {
+        value.0
+    }
+}
+
 #[derive(Component, Default, Clone, Copy)]
 pub struct Rotation(pub f64);
+
+impl Deref for Rotation {
+    type Target = f64;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<Rotation> for f64 {
+    fn from(value: Rotation) -> Self {
+        value.0
+    }
+}
 
 #[derive(Component, Clone, Copy)]
 pub struct Tangible;
@@ -18,6 +46,12 @@ pub struct Tangible;
 pub struct Size {
     pub width: f64,
     pub height: f64,
+}
+
+impl From<Size> for DVec2 {
+    fn from(value: Size) -> Self {
+        Self::new(value.width, value.height)
+    }
 }
 
 #[derive(Component, Clone, Copy)]
@@ -76,11 +110,5 @@ impl Default for Connection {
             entity1: Entity::PLACEHOLDER,
             entity2: Entity::PLACEHOLDER,
         }
-    }
-}
-
-impl From<&Size> for DVec2 {
-    fn from(value: &Size) -> Self {
-        Self::new(value.width, value.height)
     }
 }

@@ -2,8 +2,8 @@ use core::f32::consts::PI;
 
 use crate::components::{Position, Rotation, Size};
 use crate::shapes::{Shape, ShapeImpl};
+use crate::utils::BoundingBox;
 
-use bevy::math::Rect;
 use bevy::render::mesh::{Indices, Mesh};
 
 #[derive(Debug, Clone, Copy)]
@@ -38,7 +38,7 @@ impl<const N: u8> ShapeImpl for NGon<N> {
             .with_inserted_indices(Indices::U16(indices))
     }
 
-    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
         if N < 10 {
             // With a small number of vertices, using a
             // specialized bounding box is good

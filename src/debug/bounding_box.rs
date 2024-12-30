@@ -52,10 +52,10 @@ fn move_mounding_box(
             continue;
         };
 
-        let bounding_box = shape.get_bounding_box(position, size, rotation);
+        let bounding_box = shape.get_bounding_box(*position, *size, *rotation);
         gizmos.rect_2d(
-            bounding_box.center() * scale,
-            bounding_box.size() * scale,
+            bounding_box.center().as_vec2() * scale,
+            bounding_box.size().as_vec2() * scale,
             Color::BLACK,
         );
     }

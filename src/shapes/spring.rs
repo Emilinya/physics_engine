@@ -1,7 +1,7 @@
 use crate::components::{Position, Rotation, Size};
 use crate::shapes::{Shape, ShapeImpl};
+use crate::utils::BoundingBox;
 
-use bevy::math::Rect;
 use bevy::render::mesh::{Indices, Mesh};
 
 use std::f32::consts::PI;
@@ -126,7 +126,7 @@ impl ShapeImpl for Spring {
             .with_inserted_indices(Indices::U32(indices))
     }
 
-    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
         // a spring is square-like, so we can use the bounding box of a square
         Shape::Square.get_bounding_box(position, size, rotation)
     }

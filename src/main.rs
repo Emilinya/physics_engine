@@ -5,6 +5,7 @@ mod physics;
 mod scenes;
 mod shapes;
 mod spawners;
+mod utils;
 
 use debug::bounding_box::ShowBoundingBoxPlugin;
 use debug::menu::DebugInfoPlugin;

@@ -6,6 +6,7 @@ mod square;
 pub use spring::Spring as SpringShape;
 
 use crate::components::{Position, Rotation, Size};
+use crate::utils::BoundingBox;
 
 use bevy::prelude::*;
 use bevy::render::{
@@ -51,7 +52,7 @@ impl ShapeImpl for Shape {
         self.get_shape().get_mesh()
     }
 
-    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
         self.get_shape().get_bounding_box(position, size, rotation)
     }
 }
@@ -61,7 +62,7 @@ pub trait ShapeImpl {
 
     fn get_mesh(&self) -> Mesh;
 
-    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect;
+    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox;
 
     /// Create `Mesh` with position, uv, and normals, but not indices.
     fn get_incomplete_mesh(&self) -> Mesh {
@@ -93,16 +94,21 @@ pub trait ShapeImpl {
     }
 
     /// Get bounding box by iterating over all vertices, which can be quite slow.
-    fn vertex_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+    fn vertex_bounding_box(
+        &self,
+        position: Position,
+        size: Size,
+        rotation: Rotation,
+    ) -> BoundingBox {
         let size_vec = Vec2::new(size.width as f32, size.height as f32);
-        let pos_vec = position.0.as_vec2();
+        let pos_vec = position.as_vec2();
 
         let vertices: Vec<_> = self
             .get_vertices()
             .iter()
             .map(|v| {
                 let vertex = Vec2::from_array(*v);
-                Vec2::from_angle(rotation.0 as f32).rotate(vertex * size_vec)
+                Vec2::from_angle(*rotation as f32).rotate(vertex * size_vec)
             })
             .collect();
 
@@ -118,6 +124,6 @@ pub trait ShapeImpl {
         top_right += pos_vec;
         bottom_left += pos_vec;
 
-        Rect::from_corners(top_right, bottom_left)
+        BoundingBox::from_corners(top_right.as_dvec2(), bottom_left.as_dvec2())
     }
 }

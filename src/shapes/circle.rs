@@ -1,7 +1,8 @@
 use crate::components::{Position, Rotation, Size};
 use crate::shapes::{ngon::NGon, ShapeImpl};
+use crate::utils::BoundingBox;
 
-use bevy::math::{Rect, Vec2};
+use bevy::math::DVec2;
 use bevy::render::mesh::Mesh;
 
 #[derive(Debug, Clone, Copy)]
@@ -23,20 +24,17 @@ impl ShapeImpl for Circle {
         ngon.get_mesh()
     }
 
-    fn get_bounding_box(&self, position: &Position, size: &Size, rotation: &Rotation) -> Rect {
+    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
         if (size.width - size.height).abs() < 1e-6 {
             // We are a circle, who cares about rotation?
-            return Rect::from_center_size(position.0.as_vec2(), Vec2::splat(size.width as f32));
+            return BoundingBox::from_center_size(*position, DVec2::splat(size.width));
         }
 
-        let (sin, cos) = rotation.0.sin_cos();
+        let (sin, cos) = rotation.sin_cos();
         let bb_width = ((size.width * cos).powi(2) + (size.height * sin).powi(2)).sqrt();
         let bb_height = ((size.width * sin).powi(2) + (size.height * cos).powi(2)).sqrt();
 
-        Rect::from_center_size(
-            position.0.as_vec2(),
-            Vec2::new(bb_width as f32, bb_height as f32),
-        )
+        BoundingBox::from_center_size(*position, DVec2::new(bb_width, bb_height))
     }
 }
 
