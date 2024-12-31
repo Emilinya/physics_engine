@@ -1,13 +1,11 @@
 use crate::components::*;
-use crate::shapes::{Shape, SpringShape};
+use crate::shapes::{Shape, ShapeImpl, SpringShape};
 use crate::spawners::{spring::spring_bundle, Spawner};
+use crate::MousePosition;
 
 use bevy::input::common_conditions::*;
 use bevy::math::DVec2;
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
-
-use core::f64;
 
 pub struct InteractivityPlugin;
 
@@ -28,19 +26,15 @@ impl Plugin for InteractivityPlugin {
 struct MouseEntity;
 
 fn create_mouse_spring(
-    window_query: Query<&Window, With<PrimaryWindow>>,
-    camera_query: Query<&Camera>,
-    entity_query: Query<(Entity, &Position), With<PhysicsObject>>,
+    mouse_position_resource: Res<MousePosition>,
+    entity_query: Query<(Entity, &Shape, &Position, &Size, &Rotation), With<PhysicsObject>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let Some(mouse_position) = get_mouse_position(&window_query, &camera_query) else {
-        panic!("Tried to create mouse spring but got no mouse position?");
-    };
+    let mouse_position = mouse_position_resource.0.as_dvec2();
 
-    let Some((clicked_entity, entity_position)) =
-        get_clicked_entity(&mouse_position, &entity_query)
+    let Some((clicked_entity, entity_position)) = get_clicked_entity(mouse_position, &entity_query)
     else {
         return;
     };
@@ -73,17 +67,14 @@ fn create_mouse_spring(
 }
 
 fn move_mouse_spring(
-    window_query: Query<&Window, With<PrimaryWindow>>,
-    camera_query: Query<&Camera>,
+    mouse_position: Res<MousePosition>,
     mut mouse_entity_query: Query<&mut Position, (With<MouseEntity>, Without<Spring>)>,
 ) {
     let Ok(mut mouse_entity_pos) = mouse_entity_query.get_single_mut() else {
         return;
     };
 
-    if let Some(position) = get_mouse_position(&window_query, &camera_query) {
-        mouse_entity_pos.0 = position;
-    }
+    mouse_entity_pos.0 = mouse_position.0.as_dvec2();
 }
 
 fn destroy_mouse_spring(
@@ -95,44 +86,15 @@ fn destroy_mouse_spring(
     }
 }
 
-fn get_mouse_position(
-    window_query: &Query<&Window, With<PrimaryWindow>>,
-    camera_query: &Query<&Camera>,
-) -> Option<DVec2> {
-    let mut position = window_query.single().cursor_position()?;
-
-    let camera = camera_query.single();
-    let viewport_size = camera
-        .logical_viewport_size()
-        .expect("Can't get viewport size?!");
-    let scale = viewport_size.min_element();
-
-    // Center position
-    position -= viewport_size / 2.0;
-
-    // positive y is up >:(
-    position = Vec2::new(position.x, -position.y);
-
-    // Normalize position (Why divide by 4?)
-    position /= scale / 4.0;
-
-    Some(position.as_dvec2())
-}
-
 fn get_clicked_entity(
-    mouse_position: &DVec2,
-    entity_query: &Query<(Entity, &Position), With<PhysicsObject>>,
+    mouse_position: DVec2,
+    entity_query: &Query<(Entity, &Shape, &Position, &Size, &Rotation), With<PhysicsObject>>,
 ) -> Option<(Entity, DVec2)> {
-    let mut min_distance = f64::INFINITY;
-    let mut min_entity = None;
-
-    for (entity, position) in entity_query.iter() {
-        let distance = (position.0 - mouse_position).length();
-        if distance < min_distance {
-            min_distance = distance;
-            min_entity = Some((entity, position.0));
+    for (entity, shape, position, size, rotation) in entity_query.iter() {
+        if shape.collides_with_point((*position, *size, *rotation).into(), mouse_position) {
+            return Some((entity, **position));
         }
     }
 
-    min_entity
+    None
 }

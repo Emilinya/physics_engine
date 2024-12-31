@@ -3,6 +3,7 @@ mod ngon;
 mod spring;
 mod square;
 
+use bevy::math::DVec2;
 pub use spring::Spring as SpringShape;
 
 use crate::components::{Position, Rotation, Size};
@@ -43,6 +44,29 @@ impl Shape {
     }
 }
 
+#[derive(Debug)]
+pub struct ShapeData {
+    pub position: DVec2,
+    pub rotation: f64,
+    pub size: DVec2,
+}
+
+impl ShapeData {
+    fn new(position: Position, size: Size, rotation: Rotation) -> Self {
+        Self {
+            position: *position,
+            rotation: *rotation,
+            size: DVec2::from(size),
+        }
+    }
+}
+
+impl From<(Position, Size, Rotation)> for ShapeData {
+    fn from(value: (Position, Size, Rotation)) -> Self {
+        Self::new(value.0, value.1, value.2)
+    }
+}
+
 impl ShapeImpl for Shape {
     fn get_vertices(&self) -> Vec<[f32; 2]> {
         self.get_shape().get_vertices()
@@ -52,8 +76,12 @@ impl ShapeImpl for Shape {
         self.get_shape().get_mesh()
     }
 
-    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
-        self.get_shape().get_bounding_box(position, size, rotation)
+    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
+        self.get_shape().get_bounding_box(data)
+    }
+
+    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+        self.get_shape().collides_with_point(data, point)
     }
 }
 
@@ -62,7 +90,9 @@ pub trait ShapeImpl {
 
     fn get_mesh(&self) -> Mesh;
 
-    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox;
+    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox;
+
+    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool;
 
     /// Create `Mesh` with position, uv, and normals, but not indices.
     fn get_incomplete_mesh(&self) -> Mesh {
@@ -94,21 +124,16 @@ pub trait ShapeImpl {
     }
 
     /// Get bounding box by iterating over all vertices, which can be quite slow.
-    fn vertex_bounding_box(
-        &self,
-        position: Position,
-        size: Size,
-        rotation: Rotation,
-    ) -> BoundingBox {
-        let size_vec = Vec2::new(size.width as f32, size.height as f32);
-        let pos_vec = position.as_vec2();
+    fn vertex_bounding_box(&self, data: ShapeData) -> BoundingBox {
+        let size_vec = data.size.as_vec2();
+        let pos_vec = data.position.as_vec2();
 
         let vertices: Vec<_> = self
             .get_vertices()
             .iter()
             .map(|v| {
                 let vertex = Vec2::from_array(*v);
-                Vec2::from_angle(*rotation as f32).rotate(vertex * size_vec)
+                Vec2::from_angle(data.rotation as f32).rotate(vertex * size_vec)
             })
             .collect();
 
@@ -126,4 +151,16 @@ pub trait ShapeImpl {
 
         BoundingBox::from_corners(top_right.as_dvec2(), bottom_left.as_dvec2())
     }
+}
+
+/// Transform a point relative to some object with a position, size,
+/// and rotation such that the position is effectively (0, 0), the size
+/// is effectively (1, 1), and the rotation is effectively 0.
+pub fn transform_point(data: ShapeData, point: DVec2) -> DVec2 {
+    // translate point so position is effectively (0, 0)
+    let point = point - data.position;
+    // rotate vector so rotation is effectively 0
+    let point = DVec2::from_angle(-data.rotation).rotate(point);
+    // scale vector so size is effectively (1, 1)
+    point / data.size
 }

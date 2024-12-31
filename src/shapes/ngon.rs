@@ -1,9 +1,9 @@
 use core::f32::consts::PI;
 
-use crate::components::{Position, Rotation, Size};
-use crate::shapes::{Shape, ShapeImpl};
+use crate::shapes::{Shape, ShapeData, ShapeImpl};
 use crate::utils::BoundingBox;
 
+use bevy::math::DVec2;
 use bevy::render::mesh::{Indices, Mesh};
 
 #[derive(Debug, Clone, Copy)]
@@ -38,14 +38,24 @@ impl<const N: u8> ShapeImpl for NGon<N> {
             .with_inserted_indices(Indices::U16(indices))
     }
 
-    fn get_bounding_box(&self, position: Position, size: Size, rotation: Rotation) -> BoundingBox {
+    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
         if N < 10 {
             // With a small number of vertices, using a
             // specialized bounding box is good
-            self.vertex_bounding_box(position, size, rotation)
+            self.vertex_bounding_box(data)
         } else {
             // With a large number of vertices we are basically a circle
-            Shape::Circle.get_bounding_box(position, size, rotation)
+            Shape::Circle.get_bounding_box(data)
+        }
+    }
+
+    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+        if N < 10 {
+            // TODO: improve this
+            Shape::Circle.collides_with_point(data, point)
+        } else {
+            // With a large number of vertices we are basically a circle
+            Shape::Circle.collides_with_point(data, point)
         }
     }
 }

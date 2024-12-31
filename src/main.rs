@@ -18,7 +18,7 @@ use std::fs::File;
 
 use bevy::log::{Level, LogPlugin};
 use bevy::prelude::*;
-use bevy::window::{MonitorSelection, WindowPosition, WindowResolution};
+use bevy::window::{MonitorSelection, PrimaryWindow, WindowPosition, WindowResolution};
 use clap::Parser;
 
 #[derive(Resource, Default)]
@@ -26,6 +26,15 @@ struct Energy(f64);
 
 #[derive(Resource, Default)]
 struct EnergyFile(Option<OsString>);
+
+#[derive(Resource, Default)]
+struct WindowSize {
+    size: Vec2,
+    scale: f32,
+}
+
+#[derive(Resource, Default)]
+struct MousePosition(Vec2);
 
 fn add_camera(mut commands: Commands) {
     commands.spawn((
@@ -35,6 +44,37 @@ fn add_camera(mut commands: Commands) {
             ..OrthographicProjection::default_2d()
         },
     ));
+}
+
+fn update_window_size(camera_query: Query<&Camera>, mut window: ResMut<WindowSize>) {
+    let camera = camera_query.single();
+    let viewport_size = camera
+        .logical_viewport_size()
+        .expect("Should be able to get viewport size");
+    let scale = viewport_size.min_element();
+
+    window.scale = scale;
+    window.size = viewport_size;
+}
+
+fn update_mouse_position(
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    window: Res<WindowSize>,
+    mut mouse_position: ResMut<MousePosition>,
+) {
+    // Should I set mouse position to None here?
+    let Some(mut position) = window_query.single().cursor_position() else {
+        return;
+    };
+
+    // Center position
+    position -= window.size / 2.0;
+    // positive y is up >:(
+    position = Vec2::new(position.x, -position.y);
+    // Normalize position (Why divide by 4?)
+    position /= window.scale / 4.0;
+
+    mouse_position.0 = position;
 }
 
 #[derive(Parser, Debug)]
@@ -75,6 +115,8 @@ fn main() {
         )
         .insert_resource(ClearColor(Color::WHITE))
         .insert_resource(Energy::default())
+        .insert_resource(WindowSize::default())
+        .insert_resource(MousePosition::default())
         .insert_resource(Time::<Fixed>::from_hz(60.0))
         .insert_resource(EnergyFile(args.energy_file))
         .init_state::<GameScene>()
@@ -86,5 +128,6 @@ fn main() {
             ShowBoundingBoxPlugin,
         ))
         .add_systems(Startup, add_camera)
+        .add_systems(PreUpdate, (update_window_size, update_mouse_position))
         .run();
 }

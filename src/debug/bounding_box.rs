@@ -1,6 +1,6 @@
 use crate::components::{Position, Rotation, Size, Tangible};
-use crate::shapes::Shape;
-use crate::shapes::ShapeImpl;
+use crate::shapes::{Shape, ShapeImpl};
+use crate::{MousePosition, WindowSize};
 
 use bevy::prelude::*;
 
@@ -36,27 +36,31 @@ fn create_bounding_box(
 fn move_mounding_box(
     mut gizmos: Gizmos,
     mut commands: Commands,
-    camera_query: Query<&Camera>,
+    window: Res<WindowSize>,
+    mouse_position: Res<MousePosition>,
     shape_query: Query<(&Shape, &Position, &Size, &Rotation), With<BoundingBox>>,
     mut pointer_query: Query<(Entity, &EntityPointer), Without<BoundingBox>>,
 ) {
-    let camera = camera_query.single();
-    let viewport_size = camera
-        .logical_viewport_size()
-        .expect("Can't get viewport size?!");
-    let scale = viewport_size.min_element();
-
     for (entity, entity_pointer) in pointer_query.iter_mut() {
         let Ok((shape, position, size, rotation)) = shape_query.get(entity_pointer.0) else {
             commands.entity(entity).despawn();
             continue;
         };
 
-        let bounding_box = shape.get_bounding_box(*position, *size, *rotation);
+        let color = if shape.collides_with_point(
+            (*position, *size, *rotation).into(),
+            mouse_position.0.as_dvec2(),
+        ) {
+            Color::srgb_u8(50, 200, 50)
+        } else {
+            Color::BLACK
+        };
+
+        let bounding_box = shape.get_bounding_box((*position, *size, *rotation).into());
         gizmos.rect_2d(
-            bounding_box.center().as_vec2() * scale,
-            bounding_box.size().as_vec2() * scale,
-            Color::BLACK,
+            bounding_box.center().as_vec2() * window.scale,
+            bounding_box.size().as_vec2() * window.scale,
+            color,
         );
     }
 }
