@@ -35,6 +35,10 @@ impl ShapeImpl for Circle {
     }
 
     fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
+        if self.point_definitely_outside(data, point) {
+            return false;
+        }
+
         // When size is (1, 1), diameter is 1, so radius is 0.5
         let r = 0.5;
 

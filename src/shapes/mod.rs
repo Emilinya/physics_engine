@@ -123,6 +123,15 @@ pub trait ShapeImpl {
         )
     }
 
+    /// A function to quickly see if a point is outside or inside a shape.
+    /// Returns `true` if the point is definitely outside, and returns `false`
+    /// if the point might be inside.
+    fn point_definitely_outside(&self, data: &ShapeData, point: DVec2) -> bool {
+        // The furthest possible distance from the center a shape can be is
+        // max(width, height) / sqrt(2), which happens at the corners of a square.
+        (point - data.position).length_squared() > data.size.max_element().powi(2) / 2.0
+    }
+
     /// Get bounding box by iterating over all vertices.
     fn vertex_get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         let size_vec = data.size.as_vec2();

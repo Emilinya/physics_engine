@@ -50,6 +50,10 @@ impl<const N: u8> ShapeImpl for NGon<N> {
     }
 
     fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
+        if self.point_definitely_outside(data, point) {
+            return false;
+        }
+
         if N < 10 {
             // We are always smaller than a circle, so if the point does
             // not collide with a circle, it also does not collide with us

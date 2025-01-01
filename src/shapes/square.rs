@@ -31,6 +31,10 @@ impl ShapeImpl for Square {
     }
 
     fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
+        if self.point_definitely_outside(data, point) {
+            return false;
+        }
+
         transform_point(data, point)
             .abs()
             .cmplt(DVec2::splat(0.5))
