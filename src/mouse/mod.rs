@@ -91,7 +91,7 @@ fn get_clicked_entity(
     entity_query: &Query<(Entity, &Shape, &Position, &Size, &Rotation), With<PhysicsObject>>,
 ) -> Option<(Entity, DVec2)> {
     for (entity, shape, position, size, rotation) in entity_query.iter() {
-        if shape.collides_with_point((*position, *size, *rotation).into(), mouse_position) {
+        if shape.collides_with_point(&(*position, *size, *rotation).into(), mouse_position) {
             return Some((entity, **position));
         }
     }

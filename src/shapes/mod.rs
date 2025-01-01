@@ -7,7 +7,7 @@ use bevy::math::DVec2;
 pub use spring::Spring as SpringShape;
 
 use crate::components::{Position, Rotation, Size};
-use crate::utils::BoundingBox;
+use crate::utils::{BoundingBox, WrappingWindows};
 
 use bevy::prelude::*;
 use bevy::render::{
@@ -76,11 +76,11 @@ impl ShapeImpl for Shape {
         self.get_shape().get_mesh()
     }
 
-    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
+    fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         self.get_shape().get_bounding_box(data)
     }
 
-    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+    fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
         self.get_shape().collides_with_point(data, point)
     }
 }
@@ -90,9 +90,9 @@ pub trait ShapeImpl {
 
     fn get_mesh(&self) -> Mesh;
 
-    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox;
+    fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox;
 
-    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool;
+    fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool;
 
     /// Create `Mesh` with position, uv, and normals, but not indices.
     fn get_incomplete_mesh(&self) -> Mesh {
@@ -123,8 +123,8 @@ pub trait ShapeImpl {
         )
     }
 
-    /// Get bounding box by iterating over all vertices, which can be quite slow.
-    fn vertex_bounding_box(&self, data: ShapeData) -> BoundingBox {
+    /// Get bounding box by iterating over all vertices.
+    fn vertex_get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         let size_vec = data.size.as_vec2();
         let pos_vec = data.position.as_vec2();
 
@@ -151,12 +151,60 @@ pub trait ShapeImpl {
 
         BoundingBox::from_corners(top_right.as_dvec2(), bottom_left.as_dvec2())
     }
+
+    /// See if point is inside shape by iterating over all vertices.
+    /// Note: This assumes shape is convex and vertices are ordered counter-clockwise
+    fn vertex_collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
+        let point = transform_point(data, point).as_vec2();
+        let vertices: Vec<_> = self
+            .get_vertices()
+            .iter()
+            .map(|v| Vec2::from_array(*v))
+            .collect();
+
+        #[cfg(debug_assertions)]
+        {
+            use core::f32::consts::PI;
+
+            // Assert that shape is convex
+            for [v1, v2, v3] in vertices.wrapping_windows::<3>() {
+                let to_v1 = v1 - v2;
+                let to_v3 = v3 - v2;
+                assert!(
+                    to_v1.angle_to(to_v3) < PI,
+                    "To use `vertex_collides_with_point`, \
+                    shape must be convex"
+                );
+            }
+
+            // Assert that vertices are ordered counter-clockwise
+            for [v1, v2] in vertices.wrapping_windows::<2>() {
+                assert!(
+                    v1.angle_to(*v2) > 0.0,
+                    "To use `vertex_collides_with_point`, \
+                    vertices must be ordered counter-clockwise"
+                );
+            }
+        }
+
+        for [v1, v2] in vertices.wrapping_windows::<2>() {
+            let to_point = point - v1;
+            let edge_vec = v2 - v1;
+            let tangent = Vec2::new(edge_vec.y, -edge_vec.x);
+
+            if tangent.dot(to_point) > 0.0 {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 /// Transform a point relative to some object with a position, size,
 /// and rotation such that the position is effectively (0, 0), the size
 /// is effectively (1, 1), and the rotation is effectively 0.
-pub fn transform_point(data: ShapeData, point: DVec2) -> DVec2 {
+pub fn transform_point(data: &ShapeData, point: DVec2) -> DVec2 {
     // translate point so position is effectively (0, 0)
     let point = point - data.position;
     // rotate vector so rotation is effectively 0

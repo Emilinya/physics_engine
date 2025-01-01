@@ -21,7 +21,7 @@ impl ShapeImpl for Circle {
         NGon::<{ Self::VERTICES }>.get_mesh()
     }
 
-    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
+    fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         if (data.size.x - data.size.y).abs() < 1e-6 {
             // We are a circle, who cares about rotation?
             return BoundingBox::from_center_size(data.position, data.size);
@@ -34,7 +34,7 @@ impl ShapeImpl for Circle {
         BoundingBox::from_center_size(data.position, DVec2::new(bb_width, bb_height))
     }
 
-    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+    fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
         // When size is (1, 1), diameter is 1, so radius is 0.5
         let r = 0.5;
 

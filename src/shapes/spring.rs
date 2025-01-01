@@ -126,12 +126,12 @@ impl ShapeImpl for Spring {
             .with_inserted_indices(Indices::U32(indices))
     }
 
-    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
+    fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         // a spring is square-like, so we can use the bounding box of a square
         Shape::Square.get_bounding_box(data)
     }
 
-    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+    fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
         // this is roughly correct
         Shape::Square.collides_with_point(data, point)
     }

@@ -17,7 +17,7 @@ impl ShapeImpl for Square {
             .with_inserted_indices(Indices::U16(vec![0, 1, 2, 0, 3, 2]))
     }
 
-    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
+    fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         if data.rotation.abs() < 1e-6 {
             // But doctor, I am bounding box
             return BoundingBox::from_center_size(data.position, data.size);
@@ -30,7 +30,7 @@ impl ShapeImpl for Square {
         BoundingBox::from_center_size(data.position, DVec2::new(bb_width, bb_height))
     }
 
-    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+    fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
         transform_point(data, point)
             .abs()
             .cmplt(DVec2::splat(0.5))

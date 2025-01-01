@@ -46,17 +46,15 @@ fn move_mounding_box(
             commands.entity(entity).despawn();
             continue;
         };
+        let data = (*position, *size, *rotation).into();
 
-        let color = if shape.collides_with_point(
-            (*position, *size, *rotation).into(),
-            mouse_position.0.as_dvec2(),
-        ) {
+        let color = if shape.collides_with_point(&data, mouse_position.0.as_dvec2()) {
             Color::srgb_u8(50, 200, 50)
         } else {
             Color::BLACK
         };
 
-        let bounding_box = shape.get_bounding_box((*position, *size, *rotation).into());
+        let bounding_box = shape.get_bounding_box(&data);
         gizmos.rect_2d(
             bounding_box.center().as_vec2() * window.scale,
             bounding_box.size().as_vec2() * window.scale,

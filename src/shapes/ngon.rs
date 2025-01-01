@@ -38,21 +38,28 @@ impl<const N: u8> ShapeImpl for NGon<N> {
             .with_inserted_indices(Indices::U16(indices))
     }
 
-    fn get_bounding_box(&self, data: ShapeData) -> BoundingBox {
+    fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox {
         if N < 10 {
             // With a small number of vertices, using a
             // specialized bounding box is good
-            self.vertex_bounding_box(data)
+            self.vertex_get_bounding_box(data)
         } else {
             // With a large number of vertices we are basically a circle
             Shape::Circle.get_bounding_box(data)
         }
     }
 
-    fn collides_with_point(&self, data: ShapeData, point: DVec2) -> bool {
+    fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
         if N < 10 {
-            // TODO: improve this
-            Shape::Circle.collides_with_point(data, point)
+            // We are always smaller than a circle, so if the point does
+            // not collide with a circle, it also does not collide with us
+            if !Shape::Circle.collides_with_point(data, point) {
+                return false;
+            }
+
+            // By construction, all NGons are convex and has vertices ordered
+            // counter-clockwise, so this function is save to use.
+            self.vertex_collides_with_point(data, point)
         } else {
             // With a large number of vertices we are basically a circle
             Shape::Circle.collides_with_point(data, point)
