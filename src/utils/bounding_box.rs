@@ -47,7 +47,7 @@ impl BoundingBox {
     }
 
     #[inline]
-    pub fn intersects(&self, other: Self) -> bool {
+    pub fn intersects(&self, other: &Self) -> bool {
         let mut r = Self {
             min: self.min.max(other.min),
             max: self.max.min(other.max),

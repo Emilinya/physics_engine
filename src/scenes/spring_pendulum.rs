@@ -1,4 +1,4 @@
-use crate::components::*;
+use crate::components::Position;
 use crate::shapes::{Shape, SpringShape};
 
 use bevy::math::DVec2;

@@ -94,7 +94,7 @@ fn update_fps_text(
 
 #[allow(clippy::type_complexity)]
 fn update_energy_text(energy: Res<Energy>, mut query: Query<&mut TextSpan, With<EnergyText>>) {
-    for mut text in query.iter_mut() {
+    for mut text in &mut query {
         text.0 = format!("{:.3}", energy.0);
     }
 }

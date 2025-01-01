@@ -1,8 +1,8 @@
-use crate::components::*;
+use crate::components::{Connection, Size, Spring, SpringForce};
 
 use bevy::prelude::*;
 
-pub fn spring_bundle(
+pub const fn spring_bundle(
     width: f64,
     entity1: Entity,
     entity2: Entity,

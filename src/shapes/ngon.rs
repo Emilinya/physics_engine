@@ -24,9 +24,7 @@ impl<const N: u8> ShapeImpl for NGon<N> {
 
     fn get_mesh(&self) -> Mesh {
         // It would be nice if this was an compile-time error
-        if N < 3 {
-            panic!("Can't construct an NGon with less than 3 vertices");
-        }
+        assert!(N >= 3, "Can't construct an NGon with less than 3 vertices");
 
         let mut indices = Vec::with_capacity(3 * ((N - 2) as usize));
         for i in 0..(N - 2) {

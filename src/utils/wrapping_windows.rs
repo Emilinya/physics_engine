@@ -57,7 +57,8 @@ pub struct WrappingWindowsIter<'a, T, const N: usize> {
 }
 
 impl<'a, T, const N: usize> WrappingWindowsIter<'a, T, N> {
-    fn new(v: &'a [T]) -> Self {
+    #[inline]
+    const fn new(v: &'a [T]) -> Self {
         Self {
             v,
             idx: 0,
@@ -65,6 +66,7 @@ impl<'a, T, const N: usize> WrappingWindowsIter<'a, T, N> {
         }
     }
 
+    #[inline]
     fn get_array_starting_at(&self, start: usize) -> [&'a T; N] {
         let mut idx = start;
         std::array::from_fn(|_| {

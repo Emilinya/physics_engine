@@ -27,7 +27,7 @@ fn create_bounding_box(
         (With<Tangible>, With<Shape>, Without<BoundingBox>),
     >,
 ) {
-    for (entity, _position, _size, _rotation) in query.iter() {
+    for (entity, _position, _size, _rotation) in &query {
         commands.entity(entity).try_insert(BoundingBox);
         commands.spawn(EntityPointer(entity));
     }
@@ -41,7 +41,7 @@ fn move_mounding_box(
     shape_query: Query<(&Shape, &Position, &Size, &Rotation), With<BoundingBox>>,
     mut pointer_query: Query<(Entity, &EntityPointer), Without<BoundingBox>>,
 ) {
-    for (entity, entity_pointer) in pointer_query.iter_mut() {
+    for (entity, entity_pointer) in &mut pointer_query {
         let Ok((shape, position, size, rotation)) = shape_query.get(entity_pointer.0) else {
             commands.entity(entity).despawn();
             continue;

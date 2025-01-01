@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use crate::{components::*, Energy, EnergyFile};
+use crate::components::{Connection, PhysicsObject, Position, Spring, SpringForce};
+use crate::{Energy, EnergyFile};
 
 use crate::physics::gravity::gravitational_potential_energy;
 use crate::physics::spring::spring_potential_energy;

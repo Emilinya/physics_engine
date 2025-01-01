@@ -103,7 +103,7 @@ fn scene_button_system(
     mut query: Query<(&Interaction, &SceneButton, &mut BorderColor), Changed<Interaction>>,
     mut game_scene: ResMut<NextState<GameScene>>,
 ) {
-    for (interaction, scene, mut color) in query.iter_mut() {
+    for (interaction, scene, mut color) in &mut query {
         match interaction {
             Interaction::Pressed => {
                 *color = Color::srgb_u8(100, 100, 200).into();

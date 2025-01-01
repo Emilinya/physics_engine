@@ -1,9 +1,9 @@
-use crate::components::*;
+use crate::components::{PhysicsObject, Position, Rotation, Size, Spring};
 use crate::shapes::{Shape, ShapeImpl, SpringShape};
 use crate::spawners::{spring::spring_bundle, Spawner};
 use crate::MousePosition;
 
-use bevy::input::common_conditions::*;
+use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
@@ -90,7 +90,7 @@ fn get_clicked_entity(
     mouse_position: DVec2,
     entity_query: &Query<(Entity, &Shape, &Position, &Size, &Rotation), With<PhysicsObject>>,
 ) -> Option<(Entity, DVec2)> {
-    for (entity, shape, position, size, rotation) in entity_query.iter() {
+    for (entity, shape, position, size, rotation) in entity_query {
         if shape.collides_with_point(&(*position, *size, *rotation).into(), mouse_position) {
             return Some((entity, **position));
         }

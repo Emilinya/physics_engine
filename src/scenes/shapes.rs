@@ -1,6 +1,6 @@
 use std::iter::zip;
 
-use crate::components::*;
+use crate::components::{Position, Rotation, Size, Tangible};
 use crate::shapes::Shape;
 
 use bevy::math::DVec2;
@@ -70,7 +70,7 @@ pub fn shapes_setup(
 
 fn rotate_shapes(timer: Res<Time>, mut query: Query<&mut Rotation, With<ShapesEntity>>) {
     let dt = timer.delta_secs_f64();
-    for mut rotation in query.iter_mut() {
+    for mut rotation in &mut query {
         rotation.0 += 0.05 * dt;
     }
 }

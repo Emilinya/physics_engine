@@ -28,8 +28,8 @@ impl ShapeImpl for Circle {
         }
 
         let (sin, cos) = data.rotation.sin_cos();
-        let bb_width = ((data.size.x * cos).powi(2) + (data.size.y * sin).powi(2)).sqrt();
-        let bb_height = ((data.size.x * sin).powi(2) + (data.size.y * cos).powi(2)).sqrt();
+        let bb_width = (data.size.x * cos).hypot(data.size.y * sin);
+        let bb_height = (data.size.x * sin).hypot(data.size.y * cos);
 
         BoundingBox::from_center_size(data.position, DVec2::new(bb_width, bb_height))
     }

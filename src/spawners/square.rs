@@ -1,8 +1,8 @@
-use crate::components::*;
+use crate::components::{PhysicsObject, Position, Size, Tangible};
 
 use bevy::math::DVec2;
 
-pub fn physics_square_bundle(
+pub const fn physics_square_bundle(
     mass: f64,
     width: f64,
     height: f64,
