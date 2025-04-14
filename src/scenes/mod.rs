@@ -11,9 +11,9 @@ use spring_pendulum::SpringPendulumPlugin;
 use std::fmt;
 
 use bevy::prelude::*;
-use strum::{EnumIter, IntoStaticStr};
+use strum::EnumIter;
 
-#[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States, EnumIter, IntoStaticStr)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, States, EnumIter)]
 pub enum GameScene {
     #[default]
     Select,

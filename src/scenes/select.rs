@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use strum::IntoEnumIterator;
 
-use super::{despawn_scene, GameScene};
+use super::{GameScene, despawn_scene};
 
 use crate::scenes::SceneButton;
 

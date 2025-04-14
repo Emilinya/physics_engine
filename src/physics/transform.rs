@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use crate::components::{Position, Rotation, Size};
 use crate::WindowSize;
+use crate::components::{Position, Rotation, Size};
 
 pub fn update_transform(
     window: Res<WindowSize>,

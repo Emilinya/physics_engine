@@ -4,8 +4,8 @@ use crate::shapes::{Shape, SpringShape};
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
-use super::{despawn_scene, GameScene};
-use crate::spawners::{spring::spring_bundle, square::physics_square_bundle, Spawner};
+use super::{GameScene, despawn_scene};
+use crate::spawners::{Spawner, spring::spring_bundle, square::physics_square_bundle};
 
 #[derive(Component)]
 struct SpringPendulumEntity;

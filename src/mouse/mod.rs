@@ -1,7 +1,7 @@
+use crate::MousePosition;
 use crate::components::{PhysicsObject, Position, Rotation, Size, Spring};
 use crate::shapes::{Shape, ShapeImpl, SpringShape};
-use crate::spawners::{spring::spring_bundle, Spawner};
-use crate::MousePosition;
+use crate::spawners::{Spawner, spring::spring_bundle};
 
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::math::DVec2;

@@ -1,4 +1,4 @@
-use crate::shapes::{ngon::NGon, transform_point, Shape, ShapeData, ShapeImpl};
+use crate::shapes::{Shape, ShapeData, ShapeImpl, ngon::NGon, transform_point};
 use crate::utils::BoundingBox;
 
 use bevy::math::DVec2;
