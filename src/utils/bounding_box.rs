@@ -2,6 +2,7 @@
 
 use bevy::math::DVec2;
 
+#[derive(Debug, Clone)]
 pub struct BoundingBox {
     pub min: DVec2,
     pub max: DVec2,
@@ -48,11 +49,9 @@ impl BoundingBox {
 
     #[inline]
     pub fn intersects(&self, other: &Self) -> bool {
-        let mut r = Self {
-            min: self.min.max(other.min),
-            max: self.max.min(other.max),
-        };
-        r.min = r.min.min(r.max);
-        r.min.cmpge(r.max).any()
+        let x_intersects = self.max.x > other.min.x && other.max.x > self.min.x;
+        let y_intersects = self.max.y > other.min.y && other.max.y > self.min.y;
+
+        x_intersects && y_intersects
     }
 }

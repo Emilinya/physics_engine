@@ -135,6 +135,16 @@ impl ShapeImpl for Spring {
         // this is roughly correct
         Shape::Square.collides_with_point(data, point)
     }
+
+    fn collides_with_shape(
+        &self,
+        data: &ShapeData,
+        other_shape: &Shape,
+        other_data: &ShapeData,
+    ) -> bool {
+        // this is still roughly correct
+        Shape::Square.collides_with_shape(data, other_shape, other_data)
+    }
 }
 
 impl From<Spring> for Mesh {

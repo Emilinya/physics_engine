@@ -7,7 +7,7 @@ use bevy::math::DVec2;
 pub use spring::Spring as SpringShape;
 
 use crate::components::{Position, Rotation, Size};
-use crate::utils::{BoundingBox, WrappingWindows};
+use crate::utils::{BoundingBox, Edge, ShapeProjection, WrappingWindows};
 
 use bevy::prelude::*;
 use bevy::render::{
@@ -44,7 +44,7 @@ impl Shape {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ShapeData {
     pub position: DVec2,
     pub rotation: f64,
@@ -83,6 +83,16 @@ impl ShapeImpl for Shape {
     fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool {
         self.get_shape().collides_with_point(data, point)
     }
+
+    fn collides_with_shape(
+        &self,
+        data: &ShapeData,
+        other_shape: &Self,
+        other_data: &ShapeData,
+    ) -> bool {
+        self.get_shape()
+            .collides_with_shape(data, other_shape, other_data)
+    }
 }
 
 pub trait ShapeImpl {
@@ -93,6 +103,13 @@ pub trait ShapeImpl {
     fn get_bounding_box(&self, data: &ShapeData) -> BoundingBox;
 
     fn collides_with_point(&self, data: &ShapeData, point: DVec2) -> bool;
+
+    fn collides_with_shape(
+        &self,
+        data: &ShapeData,
+        other_shape: &Shape,
+        other_data: &ShapeData,
+    ) -> bool;
 
     /// Create `Mesh` with position, uv, and normals, but not indices.
     fn get_incomplete_mesh(&self) -> Mesh {
@@ -123,13 +140,31 @@ pub trait ShapeImpl {
         )
     }
 
-    /// A function to quickly see if a point is outside or inside a shape.
+    /// A function to quickly see if a point is outside or inside self.
     /// Returns `true` if the point is definitely outside, and returns `false`
     /// if the point might be inside.
     fn point_definitely_outside(&self, data: &ShapeData, point: DVec2) -> bool {
         // The furthest possible distance from the center a shape can be is
         // max(width, height) / sqrt(2), which happens at the corners of a square.
         (point - data.position).length_squared() > data.size.max_element().powi(2) / 2.0
+    }
+
+    /// A function to quickly see if another shape is outside or inside self.
+    /// Returns `true` if the shape is definitely outside, and returns `false`
+    /// if the shape might be inside.
+    fn shape_definitely_outside(
+        &self,
+        data: &ShapeData,
+        other_shape: &Shape,
+        other_data: &ShapeData,
+    ) -> bool {
+        // dbg!(
+        //     self.get_bounding_box(data),
+        //     other_shape.get_bounding_box(other_data),
+        // );
+        !self
+            .get_bounding_box(data)
+            .intersects(&other_shape.get_bounding_box(other_data))
     }
 
     /// Get bounding box by iterating over all vertices.
@@ -172,36 +207,63 @@ pub trait ShapeImpl {
             .collect();
 
         #[cfg(debug_assertions)]
-        {
-            use core::f32::consts::PI;
+        check_vertices(&vertices);
 
-            // Assert that shape is convex
-            for [v1, v2, v3] in vertices.wrapping_windows::<3>() {
-                let to_v1 = v1 - v2;
-                let to_v3 = v3 - v2;
-                assert!(
-                    to_v1.angle_to(to_v3) < PI,
-                    "To use `vertex_collides_with_point`, \
-                    shape must be convex"
-                );
-            }
-
-            // Assert that vertices are ordered counter-clockwise
-            for [v1, v2] in vertices.wrapping_windows::<2>() {
-                assert!(
-                    v1.angle_to(*v2) > 0.0,
-                    "To use `vertex_collides_with_point`, \
-                    vertices must be ordered counter-clockwise"
-                );
+        for [v1, v2] in vertices.wrapping_windows::<2>() {
+            if Edge::new(v1, v2).point_outside(point - v1) {
+                return false;
             }
         }
 
-        for [v1, v2] in vertices.wrapping_windows::<2>() {
-            let to_point = point - v1;
-            let edge_vec = v2 - v1;
-            let tangent = Vec2::new(edge_vec.y, -edge_vec.x);
+        true
+    }
 
-            if tangent.dot(to_point) > 0.0 {
+    fn vertex_collides_with_shape(
+        &self,
+        data: &ShapeData,
+        other_shape: &Shape,
+        other_data: &ShapeData,
+    ) -> bool {
+        let self_vertices: Vec<_> = self
+            .get_vertices()
+            .iter()
+            .map(|v| {
+                let scaled_vec = data.size * Vec2::from_array(*v).as_dvec2();
+                let rotated_vec = DVec2::from_angle(data.rotation).rotate(scaled_vec);
+                (data.position + rotated_vec).as_vec2()
+            })
+            .collect();
+
+        let other_vertices: Vec<_> = other_shape
+            .get_vertices()
+            .iter()
+            .map(|v| {
+                let scaled_vec = other_data.size * Vec2::from_array(*v).as_dvec2();
+                let rotated_vec = DVec2::from_angle(other_data.rotation).rotate(scaled_vec);
+                (other_data.position + rotated_vec).as_vec2()
+            })
+            .collect();
+
+        #[cfg(debug_assertions)]
+        check_vertices(&self_vertices);
+        #[cfg(debug_assertions)]
+        check_vertices(&other_vertices);
+
+        let self_edges = self_vertices
+            .wrapping_windows::<2>()
+            .map(|[v1, v2]| Edge::new(v1, v2));
+        let other_edges = other_vertices
+            .wrapping_windows::<2>()
+            .map(|[v1, v2]| Edge::new(v1, v2));
+        let edge_iter = self_edges.chain(other_edges);
+
+        for edge in edge_iter {
+            let self_shape_projection = ShapeProjection::orthogonal_to_edge(&edge, &self_vertices);
+            let other_shape_projection =
+                ShapeProjection::orthogonal_to_edge(&edge, &other_vertices);
+
+            dbg!(edge, self_shape_projection, other_shape_projection);
+            if !self_shape_projection.overlaps_with(&other_shape_projection) {
                 return false;
             }
         }
@@ -220,4 +282,97 @@ pub fn transform_point(data: &ShapeData, point: DVec2) -> DVec2 {
     let point = DVec2::from_angle(-data.rotation).rotate(point);
     // scale vector so size is effectively (1, 1)
     point / data.size
+}
+
+#[cfg(debug_assertions)]
+/// Assert that vertices define a shape that is convex and ordered counter-clockwise
+fn check_vertices(vertices: &[Vec2]) {
+    use core::f32::consts::PI;
+
+    let center = vertices.iter().sum::<Vec2>() / vertices.len() as f32;
+    let origin_vertices: Vec<_> = vertices.iter().map(|vertex| vertex - center).collect();
+
+    // Assert that shape is convex
+    for [v1, v2, v3] in origin_vertices.wrapping_windows::<3>() {
+        let to_v1 = v1 - v2;
+        let to_v3 = v3 - v2;
+        assert!(
+            to_v1.angle_to(to_v3) < PI,
+            "To use vertex based collision, shape must be convex",
+        );
+    }
+
+    // Assert that vertices are ordered counter-clockwise
+    for [v1, v2] in origin_vertices.wrapping_windows::<2>() {
+        assert!(
+            v1.angle_to(*v2) > 0.0,
+            "To use vertex based collision, \
+            vertices must be ordered counter-clockwise",
+        );
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::f64::consts::PI;
+
+    use super::*;
+
+    #[test]
+    fn test_vertex_collides_with_point() {
+        let data = ShapeData {
+            position: DVec2::ZERO,
+            rotation: PI / 4.0,
+            size: DVec2::new(2.0, 1.0),
+        };
+
+        for (point, inside) in [
+            (DVec2::new(0.84, 0.54), false),
+            (DVec2::new(0.0, 0.5), true),
+            (DVec2::new(-0.49, 0.25), false),
+            (DVec2::new(-0.79, -0.37), false),
+            (DVec2::new(-0.62, -0.46), true),
+            (DVec2::new(0.18, -0.3), true),
+        ] {
+            assert_eq!(
+                Shape::Pentagon.vertex_collides_with_point(&data, point),
+                inside,
+            );
+        }
+    }
+
+    #[test]
+    fn test_vertex_collides_with_shape() {
+        let data1 = ShapeData {
+            position: DVec2::ZERO,
+            rotation: PI / 4.0,
+            size: DVec2::new(2.0, 1.0),
+        };
+
+        let data2 = ShapeData {
+            position: DVec2::ZERO,
+            rotation: -PI / 6.0,
+            size: DVec2::new(1.0, 2.0),
+        };
+
+        for (pos, collides) in [
+            (DVec2::new(0.77, -0.67), false),
+            (DVec2::new(0.69, -0.59), true),
+            (DVec2::new(-1.04, 0.13), false),
+            (DVec2::new(1.0, 1.5), false),
+            (DVec2::new(0.93, 1.42), true),
+            (DVec2::new(0.27, 0.28), true),
+        ] {
+            dbg!(pos, collides);
+            let other_data = ShapeData {
+                position: pos,
+                ..data2
+            };
+            assert_eq!(
+                Shape::Pentagon.collides_with_shape(&data1, &Shape::Pentagon, &other_data),
+                collides,
+            );
+            eprintln!();
+        }
+    }
 }

@@ -1,4 +1,4 @@
-use crate::shapes::{ngon::NGon, transform_point, ShapeData, ShapeImpl};
+use crate::shapes::{ngon::NGon, transform_point, Shape, ShapeData, ShapeImpl};
 use crate::utils::BoundingBox;
 
 use bevy::math::DVec2;
@@ -48,6 +48,19 @@ impl ShapeImpl for Circle {
         }
 
         transform_point(data, point).length_squared() < r.powi(2)
+    }
+
+    fn collides_with_shape(
+        &self,
+        data: &ShapeData,
+        other_shape: &Shape,
+        other_data: &ShapeData,
+    ) -> bool {
+        if self.shape_definitely_outside(data, other_shape, other_data) {
+            return false;
+        }
+
+        true
     }
 }
 

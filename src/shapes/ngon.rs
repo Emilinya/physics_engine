@@ -67,6 +67,32 @@ impl<const N: u8> ShapeImpl for NGon<N> {
             Shape::Circle.collides_with_point(data, point)
         }
     }
+
+    fn collides_with_shape(
+        &self,
+        data: &ShapeData,
+        other_shape: &Shape,
+        other_data: &ShapeData,
+    ) -> bool {
+        if self.shape_definitely_outside(data, other_shape, other_data) {
+            return false;
+        }
+
+        if N < 10 {
+            // We are always smaller than a circle, so if a shape does
+            // not collide with a circle, it also does not collide with us
+            if !Shape::Circle.collides_with_shape(data, other_shape, other_data) {
+                return false;
+            }
+
+            // By construction, all NGons are convex and has vertices ordered
+            // counter-clockwise, so this function is save to use.
+            self.vertex_collides_with_shape(data, other_shape, other_data)
+        } else {
+            // With a large number of vertices we are basically a circle
+            Shape::Circle.collides_with_shape(data, other_shape, other_data)
+        }
+    }
 }
 
 impl<const N: u8> From<NGon<N>> for Mesh {
