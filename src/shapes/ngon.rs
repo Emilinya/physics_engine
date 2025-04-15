@@ -74,6 +74,20 @@ impl<const N: u8> ShapeImpl for NGon<N> {
         other_shape: &Shape,
         other_data: &ShapeData,
     ) -> bool {
+        if matches!(other_shape, Shape::Circle) {
+            let self_shape = match N {
+                3 => Some(Shape::Triangle),
+                5 => Some(Shape::Pentagon),
+                6 => Some(Shape::Hexagon),
+                7 => Some(Shape::Heptagon),
+                8 => Some(Shape::Octagon),
+                _ => None,
+            };
+            if let Some(shape) = self_shape {
+                return other_shape.collides_with_shape(other_data, &shape, data);
+            }
+        }
+
         if self.shape_definitely_outside(data, other_shape, other_data) {
             return false;
         }

@@ -1,7 +1,7 @@
-use crate::MousePosition;
-use crate::components::{PhysicsObject, Position, Rotation, Size, Spring};
+use crate::components::{PhysicsObject, Position, Rotation, Size, Spring, Tangible};
 use crate::shapes::{Shape, ShapeImpl, SpringShape};
 use crate::spawners::{Spawner, spring::spring_bundle};
+use crate::{MousePosition, WindowSize};
 
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::math::DVec2;
@@ -9,21 +9,54 @@ use bevy::prelude::*;
 
 pub struct InteractivityPlugin;
 
+#[derive(Default, Reflect, GizmoConfigGroup)]
+pub struct HighlightGizmos;
+
 impl Plugin for InteractivityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                create_mouse_spring.run_if(input_just_pressed(MouseButton::Left)),
-                move_mouse_spring.run_if(input_pressed(MouseButton::Left)),
-                destroy_mouse_spring.run_if(input_just_released(MouseButton::Left)),
-            ),
-        );
+        app.init_gizmo_group::<HighlightGizmos>()
+            .add_systems(Startup, set_highlight_gizmo_config)
+            .add_systems(
+                Update,
+                (
+                    highlight_hovered_entity,
+                    create_mouse_spring.run_if(input_just_pressed(MouseButton::Left)),
+                    move_mouse_spring.run_if(input_pressed(MouseButton::Left)),
+                    destroy_mouse_spring.run_if(input_just_released(MouseButton::Left)),
+                ),
+            );
     }
 }
 
 #[derive(Component)]
 struct MouseEntity;
+
+#[allow(clippy::type_complexity)]
+fn highlight_hovered_entity(
+    mut gizmos: Gizmos<HighlightGizmos>,
+    window: Res<WindowSize>,
+    mouse_position_resource: Res<MousePosition>,
+    entity_query: Query<
+        (&Shape, &Position, &Size, &Rotation),
+        (With<Tangible>, With<PhysicsObject>),
+    >,
+) {
+    let mouse_position = mouse_position_resource.0.as_dvec2();
+
+    for (shape, position, size, rotation) in &entity_query {
+        let data = (*position, *size, *rotation).into();
+        if !shape.collides_with_point(&data, mouse_position) {
+            continue;
+        }
+
+        let vertices = shape.get_shape_vertices(&data);
+        let points = vertices
+            .iter()
+            .map(|vertex| vertex * window.scale)
+            .chain([vertices[0] * window.scale]);
+        gizmos.linestrip_2d(points, Color::srgb_u8(50, 200, 50));
+    }
+}
 
 fn create_mouse_spring(
     mouse_position_resource: Res<MousePosition>,
@@ -86,9 +119,9 @@ fn destroy_mouse_spring(
     }
 }
 
-fn get_clicked_entity(
+pub fn get_clicked_entity<'a>(
     mouse_position: DVec2,
-    entity_query: &Query<(Entity, &Shape, &Position, &Size, &Rotation), With<PhysicsObject>>,
+    entity_query: impl IntoIterator<Item = (Entity, &'a Shape, &'a Position, &'a Size, &'a Rotation)>,
 ) -> Option<(Entity, DVec2)> {
     for (entity, shape, position, size, rotation) in entity_query {
         if shape.collides_with_point(&(*position, *size, *rotation).into(), mouse_position) {
@@ -97,4 +130,10 @@ fn get_clicked_entity(
     }
 
     None
+}
+
+fn set_highlight_gizmo_config(mut config_store: ResMut<GizmoConfigStore>) {
+    let (config, _) = config_store.config_mut::<HighlightGizmos>();
+    config.line_width = 6.0;
+    config.line_joints = GizmoLineJoint::Miter;
 }

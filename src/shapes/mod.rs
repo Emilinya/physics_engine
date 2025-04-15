@@ -140,6 +140,17 @@ pub trait ShapeImpl {
         )
     }
 
+    fn get_shape_vertices(&self, data: &ShapeData) -> Vec<Vec2> {
+        self.get_vertices()
+            .iter()
+            .map(|v| {
+                let scaled_vec = data.size * Vec2::from_array(*v).as_dvec2();
+                let rotated_vec = DVec2::from_angle(data.rotation).rotate(scaled_vec);
+                (data.position + rotated_vec).as_vec2()
+            })
+            .collect()
+    }
+
     /// A function to quickly see if a point is outside or inside self.
     /// Returns `true` if the point is definitely outside, and returns `false`
     /// if the point might be inside.
@@ -158,10 +169,6 @@ pub trait ShapeImpl {
         other_shape: &Shape,
         other_data: &ShapeData,
     ) -> bool {
-        // dbg!(
-        //     self.get_bounding_box(data),
-        //     other_shape.get_bounding_box(other_data),
-        // );
         !self
             .get_bounding_box(data)
             .intersects(&other_shape.get_bounding_box(other_data))
@@ -224,25 +231,8 @@ pub trait ShapeImpl {
         other_shape: &Shape,
         other_data: &ShapeData,
     ) -> bool {
-        let self_vertices: Vec<_> = self
-            .get_vertices()
-            .iter()
-            .map(|v| {
-                let scaled_vec = data.size * Vec2::from_array(*v).as_dvec2();
-                let rotated_vec = DVec2::from_angle(data.rotation).rotate(scaled_vec);
-                (data.position + rotated_vec).as_vec2()
-            })
-            .collect();
-
-        let other_vertices: Vec<_> = other_shape
-            .get_vertices()
-            .iter()
-            .map(|v| {
-                let scaled_vec = other_data.size * Vec2::from_array(*v).as_dvec2();
-                let rotated_vec = DVec2::from_angle(other_data.rotation).rotate(scaled_vec);
-                (other_data.position + rotated_vec).as_vec2()
-            })
-            .collect();
+        let self_vertices: Vec<_> = self.get_shape_vertices(data);
+        let other_vertices: Vec<_> = other_shape.get_shape_vertices(other_data);
 
         #[cfg(debug_assertions)]
         check_vertices(&self_vertices);
@@ -258,12 +248,11 @@ pub trait ShapeImpl {
         let edge_iter = self_edges.chain(other_edges);
 
         for edge in edge_iter {
-            let self_shape_projection = ShapeProjection::orthogonal_to_edge(&edge, &self_vertices);
-            let other_shape_projection =
-                ShapeProjection::orthogonal_to_edge(&edge, &other_vertices);
+            let tangent = edge.tangent().normalize();
+            let self_projection = ShapeProjection::project_vertices(&self_vertices, tangent);
+            let other_projection = ShapeProjection::project_vertices(&other_vertices, tangent);
 
-            dbg!(edge, self_shape_projection, other_shape_projection);
-            if !self_shape_projection.overlaps_with(&other_shape_projection) {
+            if !self_projection.overlaps_with(&other_projection) {
                 return false;
             }
         }
@@ -286,7 +275,7 @@ pub fn transform_point(data: &ShapeData, point: DVec2) -> DVec2 {
 
 #[cfg(debug_assertions)]
 /// Assert that vertices define a shape that is convex and ordered counter-clockwise
-fn check_vertices(vertices: &[Vec2]) {
+pub fn check_vertices(vertices: &[Vec2]) {
     use core::f32::consts::PI;
 
     let center = vertices.iter().sum::<Vec2>() / vertices.len() as f32;
@@ -363,7 +352,6 @@ mod test {
             (DVec2::new(0.93, 1.42), true),
             (DVec2::new(0.27, 0.28), true),
         ] {
-            dbg!(pos, collides);
             let other_data = ShapeData {
                 position: pos,
                 ..data2
@@ -372,7 +360,6 @@ mod test {
                 Shape::Pentagon.collides_with_shape(&data1, &Shape::Pentagon, &other_data),
                 collides,
             );
-            eprintln!();
         }
     }
 }

@@ -1,7 +1,9 @@
 use std::iter::zip;
 
+use crate::MousePosition;
 use crate::components::{Position, Rotation, Size, Tangible};
-use crate::shapes::Shape;
+use crate::debug::bounding_box::BoundingBoxColor;
+use crate::shapes::{Shape, ShapeImpl};
 
 use bevy::math::DVec2;
 use bevy::prelude::*;
@@ -17,8 +19,27 @@ pub struct ShapesPlugin;
 impl Plugin for ShapesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameScene::Shapes), shapes_setup)
-            .add_systems(Update, rotate_shapes)
+            .add_systems(Update, (highlight_hovered, rotate_shapes))
             .add_systems(OnExit(GameScene::Shapes), despawn_scene::<ShapesEntity>);
+    }
+}
+
+fn highlight_hovered(
+    mouse_position_resource: Res<MousePosition>,
+    mut query: Query<
+        (&Shape, &Position, &Size, &Rotation, &mut BoundingBoxColor),
+        With<ShapesEntity>,
+    >,
+) {
+    let mouse_position = mouse_position_resource.0.as_dvec2();
+
+    for (shape, position, size, rotation, mut color) in &mut query {
+        let data = (*position, *size, *rotation).into();
+        if shape.collides_with_point(&data, mouse_position) {
+            color.0 = Color::srgb_u8(50, 200, 50);
+        } else {
+            color.0 = Color::BLACK;
+        }
     }
 }
 

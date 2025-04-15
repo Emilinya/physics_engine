@@ -31,14 +31,13 @@ pub struct ShapeProjection {
 }
 
 impl ShapeProjection {
-    #[expect(dead_code)]
-    pub fn new(min: f32, max: f32) -> Self {
+    #[inline]
+    pub fn from_min_max(min: f32, max: f32) -> Self {
         debug_assert!(min < max);
         Self { min, max }
     }
 
-    pub fn orthogonal_to_edge(edge: &Edge, vertices: &[Vec2]) -> Self {
-        let tangent = edge.tangent().normalize();
+    pub fn project_vertices(vertices: &[Vec2], tangent: Vec2) -> Self {
         let mut min = f32::INFINITY;
         let mut max = -f32::INFINITY;
 

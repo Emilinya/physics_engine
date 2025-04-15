@@ -47,11 +47,15 @@ impl ShapeImpl for Square {
         other_shape: &Shape,
         other_data: &ShapeData,
     ) -> bool {
+        if matches!(other_shape, Shape::Circle) {
+            return other_shape.collides_with_shape(other_data, &Shape::Square, data);
+        }
+
         if self.shape_definitely_outside(data, other_shape, other_data) {
             return false;
         }
 
-        true
+        self.vertex_collides_with_shape(data, other_shape, other_data)
     }
 }
 

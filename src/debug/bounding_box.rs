@@ -1,11 +1,14 @@
+use crate::WindowSize;
 use crate::components::{Position, Rotation, Size, Tangible};
 use crate::shapes::{Shape, ShapeImpl};
-use crate::{MousePosition, WindowSize};
 
 use bevy::prelude::*;
 
 #[derive(Component)]
 struct BoundingBox;
+
+#[derive(Component)]
+pub struct BoundingBoxColor(pub Color);
 
 #[derive(Component)]
 struct EntityPointer(Entity);
@@ -28,7 +31,9 @@ fn create_bounding_box(
     >,
 ) {
     for (entity, _position, _size, _rotation) in &query {
-        commands.entity(entity).try_insert(BoundingBox);
+        commands
+            .entity(entity)
+            .try_insert((BoundingBox, BoundingBoxColor(Color::BLACK)));
         commands.spawn(EntityPointer(entity));
     }
 }
@@ -37,28 +42,21 @@ fn move_mounding_box(
     mut gizmos: Gizmos,
     mut commands: Commands,
     window: Res<WindowSize>,
-    mouse_position: Res<MousePosition>,
-    shape_query: Query<(&Shape, &Position, &Size, &Rotation), With<BoundingBox>>,
+    shape_query: Query<(&Shape, &Position, &Size, &Rotation, &BoundingBoxColor), With<BoundingBox>>,
     mut pointer_query: Query<(Entity, &EntityPointer), Without<BoundingBox>>,
 ) {
     for (entity, entity_pointer) in &mut pointer_query {
-        let Ok((shape, position, size, rotation)) = shape_query.get(entity_pointer.0) else {
+        let Ok((shape, position, size, rotation, color)) = shape_query.get(entity_pointer.0) else {
             commands.entity(entity).despawn();
             continue;
         };
         let data = (*position, *size, *rotation).into();
 
-        let color = if shape.collides_with_point(&data, mouse_position.0.as_dvec2()) {
-            Color::srgb_u8(50, 200, 50)
-        } else {
-            Color::BLACK
-        };
-
         let bounding_box = shape.get_bounding_box(&data);
         gizmos.rect_2d(
             bounding_box.center().as_vec2() * window.scale,
             bounding_box.size().as_vec2() * window.scale,
-            color,
+            color.0,
         );
     }
 }
@@ -66,4 +64,5 @@ fn move_mounding_box(
 fn set_gizmo_config(mut config_store: ResMut<GizmoConfigStore>) {
     let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
     config.line_width = 6.0;
+    config.line_joints = GizmoLineJoint::Miter;
 }
