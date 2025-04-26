@@ -93,12 +93,6 @@ impl<const N: u8> ShapeImpl for NGon<N> {
         }
 
         if N < 10 {
-            // We are always smaller than a circle, so if a shape does
-            // not collide with a circle, it also does not collide with us
-            if !Shape::Circle.collides_with_shape(data, other_shape, other_data) {
-                return false;
-            }
-
             // By construction, all NGons are convex and has vertices ordered
             // counter-clockwise, so this function is save to use.
             self.vertex_collides_with_shape(data, other_shape, other_data)

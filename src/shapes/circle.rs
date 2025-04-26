@@ -1,10 +1,11 @@
 use std::f64::consts::PI;
 
 use crate::shapes::{Shape, ShapeData, ShapeImpl, ngon::NGon, transform_point};
-use crate::utils::{BoundingBox, Edge, ShapeProjection, WrappingWindows};
+use crate::utils::{BoundingBox, Edge, ShapeProjection, WrappingWindows, global_newton_solver};
 
 use bevy::math::{DVec2, Vec2};
 use bevy::render::mesh::Mesh;
+use nalgebra::{Matrix2, Vector2};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Circle;
@@ -18,35 +19,68 @@ impl Circle {
         (data.size.x - data.size.y).abs() < 1e-6
     }
 
-    fn get_radius(data: &ShapeData, along: DVec2) -> f64 {
-        if Self::is_circular(data) {
-            // circles are easy :)
-            0.5 * data.size.x
-        } else if data.rotation.abs() < 1e-6 {
-            // ellipses are still fine if they are not rotated :)
-            let (a, b) = (0.5 * data.size.x, 0.5 * data.size.y);
-            let (sin, cos) = along.to_angle().sin_cos();
-            (a * cos).hypot(b * sin)
-        } else {
-            // rotated ellipses are scary :(
-            let (a, b) = (0.5 * data.size.x, 0.5 * data.size.y);
-            let cos = if along.x.abs() < 1e-6 {
-                // when along = (0, y), along.to_angle().cos() == 0,
-                // so along.to_angle().tan() "=" ∞. Luckily, we can calculate
-                // an analytical value for cos in this case
-                -(2.0 * data.rotation).cos()
-            } else {
-                // add pi so angle is in the range [0, 2π]
-                let phi = along.to_angle() + PI;
-                // TODO: this seems inefficient :(
-                let offset = (a / b * phi.tan()).atan();
-                (2.0 * (data.rotation - offset)).cos()
-            };
+    fn circles_collide(self_data: &ShapeData, other_data: &ShapeData) -> bool {
+        #![allow(non_snake_case)]
 
-            // The proof of this formula is left as an exercise to the reader
-            let (a2, b2) = (a.powi(2), b.powi(2));
-            ((cos * (a2 - b2) + a2 + b2) / 2.0).sqrt()
+        if Self::is_circular(self_data) && Self::is_circular(other_data) {
+            // circles are easy as they have a constant radius
+            let self_to_other = other_data.position - self_data.position;
+            let self_r = 0.5 * self_data.size.x;
+            let other_r = 0.5 * self_data.size.x;
+            return self_to_other.length() < (self_r + other_r);
         }
+
+        // ellipses are surprisingly hard to deal with. To understand
+        // the following computation, see <TODO: write blog>
+
+        let S1_inv = Matrix2::new(
+            1.0 / (0.5 * self_data.size.x),
+            0.0,
+            0.0,
+            1.0 / (0.5 * self_data.size.y),
+        );
+        let R1_inv = {
+            let (sin, cos) = self_data.rotation.sin_cos();
+            Matrix2::new(cos, sin, -sin, cos)
+        };
+        let V = S1_inv * R1_inv;
+
+        let S2 = Matrix2::new(0.5 * other_data.size.x, 0.0, 0.0, 0.5 * other_data.size.y);
+        let R2 = {
+            let (sin, cos) = other_data.rotation.sin_cos();
+            Matrix2::new(cos, -sin, sin, cos)
+        };
+
+        let p = {
+            let p = other_data.position - self_data.position;
+            V * Vector2::new(p.x, p.y)
+        };
+        let M = V * R2 * S2;
+
+        let f_fp_func = move |theta: f64| {
+            let (sin, cos) = theta.sin_cos();
+            let r = Vector2::new(cos, sin);
+            let rp = Vector2::new(-sin, cos);
+
+            let rT = r.transpose();
+            let rpT = rp.transpose();
+
+            let pT = p.transpose();
+            let MT = M.transpose();
+
+            let f = (p + M * r).norm_squared() - 1.0;
+            let fp = rpT * MT * (p + M * r) + (pT + rT * MT) * M * rp;
+
+            (f, fp[(0, 0)])
+        };
+
+        for theta0 in [0.0, PI] {
+            let result = global_newton_solver(theta0, f_fp_func);
+            if result.converged {
+                return true;
+            }
+        }
+        false
     }
 }
 
@@ -99,10 +133,7 @@ impl ShapeImpl for Circle {
         }
 
         if matches!(other_shape, Shape::Circle) {
-            let self_to_other = other_data.position - data.position;
-            let self_r = Self::get_radius(data, self_to_other);
-            let other_r = Self::get_radius(other_data, -self_to_other);
-            (data.position - other_data.position).length() < (self_r + other_r)
+            Self::circles_collide(data, other_data)
         } else {
             let other_vertices: Vec<_> = other_shape.get_shape_vertices(other_data);
 
@@ -164,6 +195,41 @@ impl From<Circle> for Mesh {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::f64::consts::PI;
+
+    #[test]
+    fn test_collides_with_circle() {
+        let data1 = ShapeData {
+            position: DVec2::ZERO,
+            rotation: PI / 4.0,
+            size: DVec2::new(2.0, 1.0),
+        };
+
+        let data2 = ShapeData {
+            position: DVec2::ZERO,
+            rotation: -PI / 6.0,
+            size: DVec2::new(1.0, 2.0),
+        };
+
+        for (pos, collides) in [
+            // (DVec2::new(0.57, -1.01), false),
+            (DVec2::new(0.4, -1.06), true),
+            (DVec2::new(-1.36, -1.45), false),
+            (DVec2::new(1.34, 1.47), false),
+            (DVec2::new(1.29, 1.46), true),
+            (DVec2::new(-0.13, 0.12), true),
+            (DVec2::new(-0.81, 0.62), true),
+        ] {
+            let moved_data = ShapeData {
+                position: pos,
+                ..data2
+            };
+            assert_eq!(
+                Shape::Circle.collides_with_shape(&data1, &Shape::Circle, &moved_data),
+                collides,
+            );
+        }
+    }
 
     #[test]
     fn test_collides_with_shape() {

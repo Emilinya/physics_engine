@@ -116,19 +116,21 @@ fn shapes_setup(
     let step_size = size * 1.25;
     let start = -((shapes.len() - 1) as f64 * 0.5 * step_size);
 
-    for (i, (color, shape)) in zip(colors, shapes).enumerate() {
-        Spawner::new(CollisionTestEntity, &mut commands)
-            .with_bundle((
-                Tangible,
-                Size {
-                    width: size * 0.75,
-                    height: size,
-                },
-                Position(DVec2::new(start + step_size * i as f64, 0.0)),
-                Rotation(i as f64 * 0.3),
-            ))
-            .with_shape(shape, &mut meshes)
-            .with_color(Color::from(color), &mut materials);
+    for x in [-0.5, 0.5] {
+        for (i, (color, shape)) in zip(&colors, &shapes).enumerate() {
+            Spawner::new(CollisionTestEntity, &mut commands)
+                .with_bundle((
+                    Tangible,
+                    Size {
+                        width: size * 0.75,
+                        height: size,
+                    },
+                    Position(DVec2::new(start + step_size * i as f64, x)),
+                    Rotation(i as f64 * x),
+                ))
+                .with_shape(*shape, &mut meshes)
+                .with_color(Color::from(*color), &mut materials);
+        }
     }
 }
 
