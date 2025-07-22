@@ -1,28 +1,36 @@
-use bevy::math::Vec2;
+use bevy::math::{DVec2, Vec2};
 
-#[derive(Debug, Clone, Copy)]
-pub struct Edge<'a> {
-    v1: &'a Vec2,
-    v2: &'a Vec2,
+macro_rules! define_edge {
+    ($name:ident, $vec_type:ty) => {
+        #[derive(Debug, Clone, Copy)]
+        pub struct $name<'a> {
+            v1: &'a $vec_type,
+            v2: &'a $vec_type,
+        }
+
+        impl<'a> $name<'a> {
+            #[inline]
+            pub fn new(v1: &'a $vec_type, v2: &'a $vec_type) -> Self {
+                Self { v1, v2 }
+            }
+
+            #[inline]
+            pub fn tangent(&self) -> $vec_type {
+                let between = self.v2 - self.v1;
+                <$vec_type>::new(between.y, -between.x)
+            }
+
+            #[inline]
+            #[allow(dead_code)]
+            pub fn point_outside(&self, point: $vec_type) -> bool {
+                self.tangent().dot(point) > 0.0
+            }
+        }
+    };
 }
 
-impl<'a> Edge<'a> {
-    #[inline]
-    pub fn new(v1: &'a Vec2, v2: &'a Vec2) -> Self {
-        Self { v1, v2 }
-    }
-
-    #[inline]
-    pub fn tangent(&self) -> Vec2 {
-        let between = self.v2 - self.v1;
-        Vec2::new(between.y, -between.x)
-    }
-
-    #[inline]
-    pub fn point_outside(&self, point: Vec2) -> bool {
-        self.tangent().dot(point) > 0.0
-    }
-}
+define_edge! {Edge, Vec2}
+define_edge! {DEdge, DVec2}
 
 #[derive(Debug, Clone, Copy)]
 pub struct ShapeProjection {
@@ -51,7 +59,7 @@ impl ShapeProjection {
     }
 
     #[inline]
-    pub fn overlaps_with(&self, other: &Self) -> bool {
-        self.max > other.min && other.max > self.min
+    pub fn overlap(&self, other: &Self) -> f32 {
+        -f32::max(other.min - self.max, self.min - other.max)
     }
 }

@@ -6,6 +6,8 @@ use bevy::render::mesh::{Indices, Mesh};
 
 use std::f32::consts::PI;
 
+use super::CollisionData;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Spring {
     pub coil_count: u32,
@@ -141,7 +143,7 @@ impl ShapeImpl for Spring {
         data: &ShapeData,
         other_shape: &Shape,
         other_data: &ShapeData,
-    ) -> bool {
+    ) -> Option<CollisionData> {
         // this is still roughly correct
         Shape::Square.collides_with_shape(data, other_shape, other_data)
     }

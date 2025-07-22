@@ -1,8 +1,10 @@
+use bevy::math::DVec2;
+use bevy::render::mesh::{Indices, Mesh};
+
 use crate::shapes::{Shape, ShapeData, ShapeImpl, transform_point};
 use crate::utils::BoundingBox;
 
-use bevy::math::DVec2;
-use bevy::render::mesh::{Indices, Mesh};
+use super::CollisionData;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Square;
@@ -46,13 +48,13 @@ impl ShapeImpl for Square {
         data: &ShapeData,
         other_shape: &Shape,
         other_data: &ShapeData,
-    ) -> bool {
+    ) -> Option<CollisionData> {
         if matches!(other_shape, Shape::Circle) {
             return other_shape.collides_with_shape(other_data, &Shape::Square, data);
         }
 
         if self.shape_definitely_outside(data, other_shape, other_data) {
-            return false;
+            return None;
         }
 
         self.vertex_collides_with_shape(data, other_shape, other_data)

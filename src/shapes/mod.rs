@@ -67,6 +67,19 @@ impl From<(Position, Size, Rotation)> for ShapeData {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct CollisionData {
+    pub depth: f32,
+    pub direction: Vec2,
+}
+
+#[allow(dead_code)]
+impl CollisionData {
+    fn new(depth: f32, direction: Vec2) -> Self {
+        Self { depth, direction }
+    }
+}
+
 impl ShapeImpl for Shape {
     fn get_vertices(&self) -> Vec<[f32; 2]> {
         self.get_shape().get_vertices()
@@ -89,7 +102,7 @@ impl ShapeImpl for Shape {
         data: &ShapeData,
         other_shape: &Self,
         other_data: &ShapeData,
-    ) -> bool {
+    ) -> Option<CollisionData> {
         self.get_shape()
             .collides_with_shape(data, other_shape, other_data)
     }
@@ -109,7 +122,7 @@ pub trait ShapeImpl {
         data: &ShapeData,
         other_shape: &Shape,
         other_data: &ShapeData,
-    ) -> bool;
+    ) -> Option<CollisionData>;
 
     /// Create `Mesh` with position, uv, and normals, but not indices.
     fn get_incomplete_mesh(&self) -> Mesh {
@@ -230,7 +243,7 @@ pub trait ShapeImpl {
         data: &ShapeData,
         other_shape: &Shape,
         other_data: &ShapeData,
-    ) -> bool {
+    ) -> Option<CollisionData> {
         let self_vertices: Vec<_> = self.get_shape_vertices(data);
         let other_vertices: Vec<_> = other_shape.get_shape_vertices(other_data);
 
@@ -247,17 +260,34 @@ pub trait ShapeImpl {
             .map(|[v1, v2]| Edge::new(v1, v2));
         let edge_iter = self_edges.chain(other_edges);
 
+        let mut min_depth = f32::INFINITY;
+        let mut collision_direction = Vec2::ZERO;
+
         for edge in edge_iter {
             let tangent = edge.tangent().normalize();
             let self_projection = ShapeProjection::project_vertices(&self_vertices, tangent);
             let other_projection = ShapeProjection::project_vertices(&other_vertices, tangent);
 
-            if !self_projection.overlaps_with(&other_projection) {
-                return false;
+            let overlap = self_projection.overlap(&other_projection);
+            if overlap < 0.0 {
+                return None;
+            }
+            if overlap < min_depth {
+                min_depth = overlap;
+                collision_direction = tangent;
             }
         }
 
-        true
+        // ensure direction of collision direction is correct
+        let to_other = (data.position - other_data.position).as_vec2();
+        if collision_direction.dot(to_other) < 0.0 {
+            collision_direction = -collision_direction;
+        }
+
+        Some(CollisionData {
+            depth: min_depth,
+            direction: collision_direction,
+        })
     }
 }
 
@@ -305,6 +335,8 @@ pub fn check_vertices(vertices: &[Vec2]) {
 mod test {
     use std::f64::consts::PI;
 
+    use crate::assert_close;
+
     use super::*;
 
     #[test]
@@ -344,22 +376,60 @@ mod test {
             size: DVec2::new(1.0, 2.0),
         };
 
-        for (pos, collides) in [
-            (DVec2::new(0.77, -0.67), false),
-            (DVec2::new(0.69, -0.59), true),
-            (DVec2::new(-1.04, 0.13), false),
-            (DVec2::new(1.0, 1.5), false),
-            (DVec2::new(0.93, 1.42), true),
-            (DVec2::new(0.27, 0.28), true),
+        for (pos, expected_collision_data) in [
+            (DVec2::new(0.77, -0.67), None),
+            (
+                DVec2::new(0.69, -0.59),
+                Some(CollisionData::new(
+                    0.038_716_326,
+                    -Vec2::from_angle(-PI as f32 / 4.0),
+                )),
+            ),
+            (DVec2::new(-1.04, 0.13), None),
+            (DVec2::new(1.0, 1.5), None),
+            (
+                DVec2::new(0.93, 1.42),
+                Some(CollisionData::new(
+                    0.072_900_71,
+                    -Vec2::from_angle(PI as f32 / 3.0),
+                )),
+            ),
+            (
+                DVec2::new(0.27, 0.28),
+                Some(CollisionData::new(
+                    0.876_761_44,
+                    Vec2::new(-0.93499696, 0.35465577),
+                )),
+            ),
         ] {
             let other_data = ShapeData {
                 position: pos,
                 ..data2
             };
-            assert_eq!(
-                Shape::Pentagon.collides_with_shape(&data1, &Shape::Pentagon, &other_data),
-                collides,
-            );
+
+            let collision_data_1 =
+                Shape::Pentagon.collides_with_shape(&data1, &Shape::Pentagon, &other_data);
+            match (collision_data_1, expected_collision_data) {
+                (Some(got), Some(expected)) => {
+                    assert_close!(got.depth, expected.depth, 1e-5);
+                    assert_close!(got.direction.x, expected.direction.x, 1e-5);
+                    assert_close!(got.direction.y, expected.direction.y, 1e-5);
+                }
+                (None, None) => {}
+                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+            }
+
+            let collision_data_2 =
+                Shape::Pentagon.collides_with_shape(&other_data, &Shape::Pentagon, &data1);
+            match (collision_data_2, expected_collision_data) {
+                (Some(got), Some(expected)) => {
+                    assert_close!(got.depth, expected.depth, 1e-5);
+                    assert_close!(got.direction.x, -expected.direction.x, 1e-5);
+                    assert_close!(got.direction.y, -expected.direction.y, 1e-5);
+                }
+                (None, None) => {}
+                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+            }
         }
     }
 }

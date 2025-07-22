@@ -1,3 +1,4 @@
+mod collision;
 mod energy;
 mod gravity;
 mod integrators;
@@ -6,6 +7,7 @@ mod transform;
 
 use bevy::prelude::*;
 
+use collision::apply_collision_force;
 use energy::calculate_total_energy;
 use gravity::apply_gravity;
 use integrators::{Integrator, Integrators};
@@ -16,7 +18,10 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        Integrators::VelocityVerlet.build(app, (apply_gravity, apply_spring_force));
+        Integrators::VelocityVerlet.build(
+            app,
+            (apply_gravity, apply_spring_force, apply_collision_force),
+        );
         app.add_systems(
             Update,
             (calculate_total_energy, update_transform, update_spring),

@@ -6,6 +6,8 @@ use crate::utils::BoundingBox;
 use bevy::math::DVec2;
 use bevy::render::mesh::{Indices, Mesh};
 
+use super::CollisionData;
+
 #[derive(Debug, Clone, Copy)]
 pub struct NGon<const N: u8>;
 
@@ -73,7 +75,7 @@ impl<const N: u8> ShapeImpl for NGon<N> {
         data: &ShapeData,
         other_shape: &Shape,
         other_data: &ShapeData,
-    ) -> bool {
+    ) -> Option<CollisionData> {
         if matches!(other_shape, Shape::Circle) {
             let self_shape = match N {
                 3 => Some(Shape::Triangle),
@@ -84,12 +86,19 @@ impl<const N: u8> ShapeImpl for NGon<N> {
                 _ => None,
             };
             if let Some(shape) = self_shape {
-                return other_shape.collides_with_shape(other_data, &shape, data);
+                // let the circle handle the collision. Doing this requires us
+                // to flip the collision direction
+                return other_shape
+                    .collides_with_shape(other_data, &shape, data)
+                    .map(|collision_data| CollisionData {
+                        direction: -collision_data.direction,
+                        ..collision_data
+                    });
             }
         }
 
         if self.shape_definitely_outside(data, other_shape, other_data) {
-            return false;
+            return None;
         }
 
         if N < 10 {

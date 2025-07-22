@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use std::iter::zip;
 
-use crate::MousePosition;
 use crate::components::{Position, Rotation, Size, Tangible};
 use crate::debug::bounding_box::BoundingBoxColor;
 use crate::mouse::get_clicked_entity;
 use crate::shapes::{Shape, ShapeImpl};
+use crate::{MousePosition, WindowSize};
 
 use bevy::input::common_conditions::{input_just_pressed, input_just_released, input_pressed};
 use bevy::math::DVec2;
@@ -59,8 +60,11 @@ fn highlight_colliding(
         ),
         With<CollisionTestEntity>,
     >,
+    window: Res<WindowSize>,
+    mut gizmos: Gizmos,
 ) {
-    let mut colliding_entities = Vec::new();
+    let mut collisions: HashMap<_, Vec<_>> = HashMap::new();
+
     for (entity1, shape1, position1, size1, rotation1, _) in &query {
         let data1 = (*position1, *size1, *rotation1).into();
         for (entity2, shape2, position2, size2, rotation2, _) in &query {
@@ -69,9 +73,11 @@ fn highlight_colliding(
             }
             let data2 = (*position2, *size2, *rotation2).into();
 
-            if shape1.collides_with_shape(&data1, shape2, &data2) {
-                colliding_entities.push(entity1);
-            }
+            let Some(collision_data) = shape1.collides_with_shape(&data1, shape2, &data2) else {
+                continue;
+            };
+
+            collisions.entry(entity1).or_default().push(collision_data);
         }
     }
 
@@ -79,12 +85,18 @@ fn highlight_colliding(
         color.0 = Color::srgba(0.0, 0.0, 0.0, 0.0);
     }
 
-    for entity in colliding_entities {
-        let Ok((_, _, _, _, _, mut color)) = query.get_mut(entity) else {
+    for (entity, collision_data_list) in collisions {
+        let Ok((_, _, position, _, _, mut color)) = query.get_mut(entity) else {
             continue;
         };
 
         color.0 = Color::srgb_u8(0, 100, 200);
+
+        let start = position.0.as_vec2() * window.scale;
+        for collision_data in collision_data_list {
+            let end = start + 10.0 * collision_data.depth * collision_data.direction * window.scale;
+            gizmos.arrow_2d(start, end, Color::BLACK);
+        }
     }
 }
 
