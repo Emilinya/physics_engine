@@ -168,11 +168,7 @@ impl Circle {
         );
 
         let (Ok(point1), Ok(point2)) = (&point1, &point2) else {
-            log::warn!(
-                "Failed to get orthogonal intercept: {:?}/{:?}",
-                point1,
-                point2
-            );
+            log::warn!("Failed to get orthogonal intercept: {point1:?}/{point2:?}");
             return None;
         };
 
@@ -378,7 +374,7 @@ mod tests {
                     assert_close!(got.direction.y, expected.direction.y, 1e-5);
                 }
                 (None, None) => {}
-                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+                (other1, other2) => panic!("{other1:?} != {other2:?}"),
             }
 
             let collision_data_2 =
@@ -390,7 +386,7 @@ mod tests {
                     assert_close!(got.direction.y, -expected.direction.y, 1e-5);
                 }
                 (None, None) => {}
-                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+                (other1, other2) => panic!("{other1:?} != {other2:?}"),
             }
         }
     }
@@ -450,7 +446,7 @@ mod tests {
                     assert_close!(got.direction.y, expected.direction.y, 1e-5);
                 }
                 (None, None) => {}
-                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+                (other1, other2) => panic!("{other1:?} != {other2:?}"),
             }
 
             let collision_data_2 =
@@ -462,7 +458,7 @@ mod tests {
                     assert_close!(got.direction.y, -expected.direction.y, 1e-5);
                 }
                 (None, None) => {}
-                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+                (other1, other2) => panic!("{other1:?} != {other2:?}"),
             }
         }
     }

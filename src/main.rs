@@ -89,7 +89,7 @@ fn main() {
 
     if let Some(file) = &args.energy_file {
         if let Err(err) = File::create(file) {
-            panic!("Failed to create energy file: {}", err);
+            panic!("Failed to create energy file: {err}");
         }
     }
 

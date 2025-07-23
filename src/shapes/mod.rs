@@ -416,7 +416,7 @@ mod test {
                     assert_close!(got.direction.y, expected.direction.y, 1e-5);
                 }
                 (None, None) => {}
-                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+                (other1, other2) => panic!("{other1:?} != {other2:?}"),
             }
 
             let collision_data_2 =
@@ -428,7 +428,7 @@ mod test {
                     assert_close!(got.direction.y, -expected.direction.y, 1e-5);
                 }
                 (None, None) => {}
-                (other1, other2) => panic!("{:?} != {:?}", other1, other2),
+                (other1, other2) => panic!("{other1:?} != {other2:?}"),
             }
         }
     }
