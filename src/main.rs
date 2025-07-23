@@ -39,15 +39,15 @@ struct MousePosition(Vec2);
 fn add_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
-        OrthographicProjection {
+        Projection::Orthographic(OrthographicProjection {
             scale: 4.0,
             ..OrthographicProjection::default_2d()
-        },
+        }),
     ));
 }
 
 fn update_window_size(camera_query: Query<&Camera>, mut window: ResMut<WindowSize>) {
-    let camera = camera_query.single();
+    let camera = camera_query.single().expect("camera should exist");
     let viewport_size = camera
         .logical_viewport_size()
         .expect("Should be able to get viewport size");
@@ -63,7 +63,8 @@ fn update_mouse_position(
     mut mouse_position: ResMut<MousePosition>,
 ) {
     // Should I set mouse position to None here?
-    let Some(mut position) = window_query.single().cursor_position() else {
+    let Ok(Some(mut position)) = window_query.single().map(|window| window.cursor_position())
+    else {
         return;
     };
 

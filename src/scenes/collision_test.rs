@@ -153,7 +153,7 @@ fn create_shape_mover(
 ) {
     let mouse_position = mouse_position_resource.0.as_dvec2();
 
-    let Some((clicked_entity, entity_position)) = get_clicked_entity(mouse_position, &entity_query)
+    let Some((clicked_entity, entity_position)) = get_clicked_entity(mouse_position, entity_query)
     else {
         return;
     };
@@ -187,6 +187,6 @@ fn destroy_shape_mover(
     mut commands: Commands,
 ) {
     for entity in &mouse_entity_query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }

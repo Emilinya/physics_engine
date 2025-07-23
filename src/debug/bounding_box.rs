@@ -63,6 +63,6 @@ fn move_mounding_box(
 
 fn set_gizmo_config(mut config_store: ResMut<GizmoConfigStore>) {
     let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
-    config.line_width = 6.0;
-    config.line_joints = GizmoLineJoint::Miter;
+    config.line.width = 6.0;
+    config.line.joints = GizmoLineJoint::Miter;
 }

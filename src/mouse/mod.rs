@@ -67,7 +67,7 @@ fn create_mouse_spring(
 ) {
     let mouse_position = mouse_position_resource.0.as_dvec2();
 
-    let Some((clicked_entity, entity_position)) = get_clicked_entity(mouse_position, &entity_query)
+    let Some((clicked_entity, entity_position)) = get_clicked_entity(mouse_position, entity_query)
     else {
         return;
     };
@@ -103,11 +103,9 @@ fn move_mouse_spring(
     mouse_position: Res<MousePosition>,
     mut mouse_entity_query: Query<&mut Position, (With<MouseEntity>, Without<Spring>)>,
 ) {
-    let Ok(mut mouse_entity_pos) = mouse_entity_query.get_single_mut() else {
-        return;
-    };
-
-    mouse_entity_pos.0 = mouse_position.0.as_dvec2();
+    if let Ok(mut mouse_entity_pos) = mouse_entity_query.single_mut() {
+        mouse_entity_pos.0 = mouse_position.0.as_dvec2();
+    }
 }
 
 fn destroy_mouse_spring(
@@ -115,7 +113,7 @@ fn destroy_mouse_spring(
     mut commands: Commands,
 ) {
     for entity in &mouse_entity_query {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 
@@ -134,6 +132,6 @@ pub fn get_clicked_entity<'a>(
 
 fn set_highlight_gizmo_config(mut config_store: ResMut<GizmoConfigStore>) {
     let (config, _) = config_store.config_mut::<HighlightGizmos>();
-    config.line_width = 6.0;
-    config.line_joints = GizmoLineJoint::Miter;
+    config.line.width = 6.0;
+    config.line.joints = GizmoLineJoint::Miter;
 }

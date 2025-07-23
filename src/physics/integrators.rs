@@ -1,3 +1,4 @@
+use bevy::ecs::system::ScheduleSystem;
 use bevy::math::DVec2;
 use bevy::prelude::*;
 
@@ -19,7 +20,9 @@ macro_rules! check_dt_size {
 }
 
 pub trait Integrator {
-    fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy);
+    fn build<F, M>(&self, app: &mut App, apply_forces: F)
+    where
+        F: IntoScheduleConfigs<ScheduleSystem, M> + Copy;
 }
 
 // TODO: Implement RK4
@@ -31,7 +34,10 @@ pub enum Integrators {
 }
 
 impl Integrator for Integrators {
-    fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
+    fn build<F, M>(&self, app: &mut App, apply_forces: F)
+    where
+        F: IntoScheduleConfigs<ScheduleSystem, M> + Copy,
+    {
         match self {
             Self::Euler => EulerStep.build(app, apply_forces),
             Self::EulerChromer => EulerChromerStep.build(app, apply_forces),
@@ -57,7 +63,10 @@ impl EulerStep {
 }
 
 impl Integrator for EulerStep {
-    fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
+    fn build<F, M>(&self, app: &mut App, apply_forces: F)
+    where
+        F: IntoScheduleConfigs<ScheduleSystem, M> + Copy,
+    {
         app.add_systems(FixedUpdate, (apply_forces, Self::step).chain());
     }
 }
@@ -79,7 +88,10 @@ impl EulerChromerStep {
 }
 
 impl Integrator for EulerChromerStep {
-    fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
+    fn build<F, M>(&self, app: &mut App, apply_forces: F)
+    where
+        F: IntoScheduleConfigs<ScheduleSystem, M> + Copy,
+    {
         app.add_systems(FixedUpdate, (apply_forces, Self::step).chain());
     }
 }
@@ -116,7 +128,10 @@ impl VelocityVerletStep {
 }
 
 impl Integrator for VelocityVerletStep {
-    fn build<M>(&self, app: &mut App, apply_forces: impl IntoSystemConfigs<M> + Copy) {
+    fn build<F, M>(&self, app: &mut App, apply_forces: F)
+    where
+        F: IntoScheduleConfigs<ScheduleSystem, M> + Copy,
+    {
         app.add_systems(PostStartup, apply_forces).add_systems(
             FixedUpdate,
             (
