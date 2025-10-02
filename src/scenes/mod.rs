@@ -1,9 +1,11 @@
+mod bouncy_balls;
 mod bouncy_castle;
 mod collision_test;
 mod select;
 mod shapes;
 mod spring_pendulum;
 
+use bouncy_balls::BouncyBallsPlugin;
 use bouncy_castle::BouncyCastlePlugin;
 use collision_test::CollisionTestPlugin;
 use select::SelectPlugin;
@@ -23,6 +25,7 @@ pub enum GameScene {
     BouncyCastle,
     Shapes,
     CollisionTest,
+    BouncyBalls,
 }
 
 impl fmt::Display for GameScene {
@@ -33,6 +36,7 @@ impl fmt::Display for GameScene {
             Self::BouncyCastle => f.write_str("Bouncy Castle"),
             Self::Shapes => f.write_str("Shapes"),
             Self::CollisionTest => f.write_str("Collision Test"),
+            Self::BouncyBalls => f.write_str("Bouncy Balls"),
         }
     }
 }
@@ -51,6 +55,7 @@ impl Plugin for ScenePlugin {
             BouncyCastlePlugin,
             ShapesPlugin,
             CollisionTestPlugin,
+            BouncyBallsPlugin,
         ));
     }
 }

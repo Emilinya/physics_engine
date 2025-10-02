@@ -1,3 +1,4 @@
+pub mod circle;
 pub mod spring;
 pub mod square;
 

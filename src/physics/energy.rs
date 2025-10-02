@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 
-use crate::components::{Connection, PhysicsObject, Position, Spring, SpringForce};
+use crate::components::{
+    Connection, PhysicsObject, Position, Rotation, Size, Spring, SpringForce, Tangible,
+};
+use crate::physics::collision::collision_potential_energy;
+use crate::shapes::Shape;
 use crate::{Energy, EnergyFile};
 
 use crate::physics::gravity::gravitational_potential_energy;
@@ -15,6 +19,7 @@ pub fn calculate_total_energy(
     spring_query: Query<(&SpringForce, &Connection)>,
     position_query: Query<&Position, Without<Spring>>,
     body_query: Query<(&Position, &PhysicsObject)>,
+    colliding_query: Query<(Entity, &Shape, &Position, &Size, &Rotation), With<Tangible>>,
 ) {
     // calculate kinetic energy
     let mut total_energy = body_query.iter().fold(0.0, |acc, (_, physics_object)| {
@@ -24,6 +29,7 @@ pub fn calculate_total_energy(
     // calculate potential energies
     total_energy += gravitational_potential_energy(body_query);
     total_energy += spring_potential_energy(spring_query, position_query);
+    total_energy += collision_potential_energy(colliding_query);
 
     // this should hopefully not happen :)
     if total_energy_resource.0.is_nan() {

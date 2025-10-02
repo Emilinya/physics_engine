@@ -36,7 +36,7 @@ check:
 
 .PHONY: lint
 lint:
-	$(SILENCE)cargo clippy -q -- -W clippy::use_self $(CLIPPY_OPTS)
+	$(SILENCE)cargo clippy -q -- $(CLIPPY_OPTS)
 
 .PHONY: lint-pedantic
 lint-pedantic:

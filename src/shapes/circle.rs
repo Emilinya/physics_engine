@@ -7,6 +7,7 @@ use crate::utils::{
     global_newton_solver, solve_quadratic,
 };
 
+use bevy::log;
 use bevy::math::{DVec2, Vec2};
 use bevy::render::mesh::Mesh;
 use nalgebra::{Matrix2, Vector2};
@@ -35,7 +36,7 @@ impl Circle {
             if overlap > 0.0 {
                 return Some(CollisionData {
                     depth: overlap as f32,
-                    direction: self_to_other.normalize().as_vec2(),
+                    direction: -self_to_other.normalize().as_vec2(),
                 });
             } else {
                 return None;

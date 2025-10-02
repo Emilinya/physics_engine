@@ -88,10 +88,10 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    if let Some(file) = &args.energy_file {
-        if let Err(err) = File::create(file) {
-            panic!("Failed to create energy file: {err}");
-        }
+    if let Some(file) = &args.energy_file
+        && let Err(err) = File::create(file)
+    {
+        panic!("Failed to create energy file: {err}");
     }
 
     App::new()
@@ -118,7 +118,7 @@ fn main() {
         .insert_resource(Energy::default())
         .insert_resource(WindowSize::default())
         .insert_resource(MousePosition::default())
-        .insert_resource(Time::<Fixed>::from_hz(60.0))
+        .insert_resource(Time::<Fixed>::from_hz(600.0))
         .insert_resource(EnergyFile(args.energy_file))
         .init_state::<GameScene>()
         .add_plugins((
