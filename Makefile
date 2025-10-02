@@ -21,10 +21,12 @@ build:
 
 .PHONY: build-wasm
 build-wasm:
-	$(SILENCE)cargo build --profile wasm-release --target wasm32-unknown-unknown
-	$(SILENCE)wasm-bindgen --no-typescript --target web \
-	  --out-dir ./wasm/ --out-name "physics_engine" \
-      ./target/wasm32-unknown-unknown/wasm-release/physics_engine.wasm
+	RUSTFLAGS='--cfg getrandom_backend="wasm_js"' \
+		cargo build --target wasm32-unknown-unknown \
+		--profile wasm-release --no-default-features
+	wasm-bindgen --no-typescript --target web \
+		--out-dir ./wasm/ --out-name "physics_engine" \
+		./target/wasm32-unknown-unknown/wasm-release/physics_engine.wasm
 
 .PHONY: format
 format:
