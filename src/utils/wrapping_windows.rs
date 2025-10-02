@@ -30,13 +30,13 @@ pub trait WrappingWindows {
     /// assert_eq!(iter.next(), Some([&'y', &'h', &'e', &'y']));
     /// assert_eq!(iter.next(), None);
     /// ```
-    fn wrapping_windows<const N: usize>(&self) -> WrappingWindowsIter<Self::Item, N>;
+    fn wrapping_windows<const N: usize>(&self) -> WrappingWindowsIter<'_, Self::Item, N>;
 }
 
 impl<T> WrappingWindows for [T] {
     type Item = T;
 
-    fn wrapping_windows<const N: usize>(&self) -> WrappingWindowsIter<T, N> {
+    fn wrapping_windows<const N: usize>(&self) -> WrappingWindowsIter<'_, T, N> {
         WrappingWindowsIter::new(self)
     }
 }
@@ -44,7 +44,7 @@ impl<T> WrappingWindows for [T] {
 impl<T, V: Deref<Target = [T]>> WrappingWindows for V {
     type Item = T;
 
-    fn wrapping_windows<const N: usize>(&self) -> WrappingWindowsIter<T, N> {
+    fn wrapping_windows<const N: usize>(&self) -> WrappingWindowsIter<'_, T, N> {
         self.deref().wrapping_windows()
     }
 }
