@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: libasound2-dev libudev-dev
+          packages: libasound2-dev libudev-dev libwayland-dev
           version: 1.0
       - uses: Swatinem/rust-cache@v2
       - run: VERBOSE=1 make ci
