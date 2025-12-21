@@ -101,7 +101,7 @@ fn main() {
                     primary_window: Some(Window {
                         // mode: WindowMode::Fullscreen,
                         canvas: Some("#gameCanvas".into()),
-                        resolution: WindowResolution::new(960.0, 540.0),
+                        resolution: WindowResolution::new(960, 540),
                         position: WindowPosition::Centered(MonitorSelection::Primary),
                         title: "Physics engine".to_owned(),
                         ..Default::default()
@@ -111,7 +111,7 @@ fn main() {
                 .set(LogPlugin {
                     filter: "physics_engine=debug".into(),
                     level: Level::WARN,
-                    custom_layer: |_| None,
+                    ..Default::default()
                 }),
         )
         .insert_resource(ClearColor(Color::WHITE))

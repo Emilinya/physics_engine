@@ -94,7 +94,7 @@ fn add_back_button(mut commands: Commands) {
                         align_items: AlignItems::Center,
                         ..default()
                     },
-                    BorderColor(Color::BLACK),
+                    BorderColor::all(Color::BLACK),
                     BorderRadius::MAX,
                 ))
                 .with_child((
@@ -104,7 +104,7 @@ fn add_back_button(mut commands: Commands) {
                         ..Default::default()
                     },
                     TextColor::from(Color::BLACK),
-                    TextLayout::new_with_justify(JustifyText::Center),
+                    TextLayout::new_with_justify(Justify::Center),
                 ));
         });
 }

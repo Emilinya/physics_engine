@@ -11,10 +11,10 @@ unused_async = "warn"
 needless_pass_by_ref_mut = "warn"
 
 [dependencies]
-bevy = { version = "0.16.1" }
+bevy = { version = "0.17.3" }
 clap = { version = "4.5.41", features = ["derive"] }
 strum = { version = "0.27.2", features = ["derive"] }
-nalgebra = "0.33.2"
+nalgebra = "0.34.1"
 rand = "0.9.2"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 

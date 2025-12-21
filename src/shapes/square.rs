@@ -1,5 +1,5 @@
 use bevy::math::DVec2;
-use bevy::render::mesh::{Indices, Mesh};
+use bevy::mesh::{Indices, Mesh};
 
 use crate::shapes::{Shape, ShapeData, ShapeImpl, transform_point};
 use crate::utils::BoundingBox;

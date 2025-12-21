@@ -60,7 +60,7 @@ fn select_setup(mut commands: Commands) {
                             align_items: AlignItems::Center,
                             ..default()
                         },
-                        BorderColor(Color::BLACK),
+                        BorderColor::all(Color::BLACK),
                         BorderRadius::MAX,
                     ))
                     .with_child((
@@ -70,7 +70,7 @@ fn select_setup(mut commands: Commands) {
                             ..Default::default()
                         },
                         TextColor::from(Color::BLACK),
-                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextLayout::new_with_justify(Justify::Center),
                     ));
             }
         });

@@ -10,9 +10,9 @@ use crate::components::{Position, Rotation, Size};
 use crate::utils::{BoundingBox, Edge, ShapeProjection, WrappingWindows};
 
 use bevy::prelude::*;
-use bevy::render::{
-    mesh::Mesh, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology,
-};
+use bevy::render::render_resource::PrimitiveTopology;
+use bevy::{asset::RenderAssetUsages, mesh::Mesh};
+
 use {circle::Circle, ngon::NGon, spring::Spring, square::Square};
 
 #[allow(dead_code)]

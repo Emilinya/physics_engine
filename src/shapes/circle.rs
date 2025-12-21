@@ -9,7 +9,7 @@ use crate::utils::{
 
 use bevy::log;
 use bevy::math::{DVec2, Vec2};
-use bevy::render::mesh::Mesh;
+use bevy::mesh::Mesh;
 use nalgebra::{Matrix2, Vector2};
 
 #[derive(Debug, Clone, Copy)]

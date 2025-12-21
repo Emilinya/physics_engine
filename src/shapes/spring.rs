@@ -2,7 +2,7 @@ use crate::shapes::{Shape, ShapeData, ShapeImpl};
 use crate::utils::BoundingBox;
 
 use bevy::math::DVec2;
-use bevy::render::mesh::{Indices, Mesh};
+use bevy::mesh::{Indices, Mesh};
 
 use std::f32::consts::PI;
 
