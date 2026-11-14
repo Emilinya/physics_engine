@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::ui_widgets::Button;
 use strum::IntoEnumIterator;
 
 use super::{GameScene, despawn_scene};
@@ -37,7 +38,7 @@ fn select_setup(mut commands: Commands) {
             parent.spawn((
                 Text::new("Select Scene"),
                 TextFont {
-                    font_size: 26.0,
+                    font_size: FontSize::Px(26.0),
                     ..Default::default()
                 },
                 TextColor::from(Color::BLACK),
@@ -58,19 +59,19 @@ fn select_setup(mut commands: Commands) {
                             border: UiRect::all(Val::Px(4.0)),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
+                            border_radius: BorderRadius::MAX,
                             ..default()
                         },
                         BorderColor::all(Color::BLACK),
-                        BorderRadius::MAX,
                     ))
                     .with_child((
                         Text::new(scene.to_string()),
                         TextFont {
-                            font_size: 20.0,
+                            font_size: FontSize::Px(20.0),
                             ..Default::default()
                         },
                         TextColor::from(Color::BLACK),
-                        TextLayout::new_with_justify(Justify::Center),
+                        TextLayout::justify(Justify::Center),
                     ));
             }
         });

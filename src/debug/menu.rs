@@ -32,7 +32,7 @@ fn spawn_debug_text<T: Component>(commands: &mut Commands, label: T, text: &str)
         .spawn((
             Text::new(text),
             TextFont {
-                font_size: 16.0,
+                font_size: FontSize::Px(16.0),
                 ..Default::default()
             },
             TextColor::from(Color::WHITE),
@@ -41,7 +41,7 @@ fn spawn_debug_text<T: Component>(commands: &mut Commands, label: T, text: &str)
             label,
             TextSpan::new(" N/A"),
             TextFont {
-                font_size: 16.0,
+                font_size: FontSize::Px(16.0),
                 ..Default::default()
             },
             TextColor::from(Color::WHITE),

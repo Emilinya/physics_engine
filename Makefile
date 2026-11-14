@@ -38,12 +38,7 @@ check:
 
 .PHONY: lint
 lint:
-	$(SILENCE)cargo clippy -q -- $(CLIPPY_OPTS)
-
-.PHONY: lint-pedantic
-lint-pedantic:
-	$(SILENCE)cargo clippy -- -W clippy::pedantic -W clippy::nursery -W clippy::clippy::restriction \
-	  -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::module_name_repetitions
+	$(SILENCE)cargo clippy --all-targets -q -- $(CLIPPY_OPTS)
 
 .PHONY: ci
 ci:

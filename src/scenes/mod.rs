@@ -15,6 +15,7 @@ use spring_pendulum::SpringPendulumPlugin;
 use std::fmt;
 
 use bevy::prelude::*;
+use bevy::{picking::hover::Hovered, ui::Pressed, ui_widgets::Button};
 use strum::EnumIter;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, States, EnumIter)]
@@ -92,37 +93,37 @@ fn add_back_button(mut commands: Commands) {
                         border: UiRect::all(Val::Px(3.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
+                        border_radius: BorderRadius::MAX,
                         ..default()
                     },
                     BorderColor::all(Color::BLACK),
-                    BorderRadius::MAX,
                 ))
                 .with_child((
                     Text::new("Scene Select"),
                     TextFont {
-                        font_size: 18.0,
+                        font_size: FontSize::Px(18.0),
                         ..Default::default()
                     },
                     TextColor::from(Color::BLACK),
-                    TextLayout::new_with_justify(Justify::Center),
+                    TextLayout::justify(Justify::Center),
                 ));
         });
 }
 
 fn scene_button_system(
-    mut query: Query<(&Interaction, &SceneButton, &mut BorderColor), Changed<Interaction>>,
+    mut query: Query<(&Hovered, Has<Pressed>, &SceneButton, &mut BorderColor)>,
     mut game_scene: ResMut<NextState<GameScene>>,
 ) {
-    for (interaction, scene, mut color) in &mut query {
-        match interaction {
-            Interaction::Pressed => {
+    for (hovered, pressed, scene, mut color) in &mut query {
+        match (hovered.get(), pressed) {
+            (_, true) => {
                 *color = Color::srgb_u8(100, 100, 200).into();
                 game_scene.set(scene.0);
             }
-            Interaction::Hovered => {
+            (true, false) => {
                 *color = Color::srgb_u8(150, 150, 150).into();
             }
-            Interaction::None => {
+            (false, false) => {
                 *color = Color::BLACK.into();
             }
         }
