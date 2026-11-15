@@ -53,6 +53,8 @@ fn interpolate(x: f32, points: &[(f32, f32)]) -> f32 {
 }
 
 fn curve_to_function(x: f32, delta: f32, f: impl Fn(f32) -> (f32, f32)) -> f32 {
+    #![allow(clippy::float_cmp, clippy::while_float)]
+
     let (fist_px, fist_py) = f(x);
     if (fist_px - x).abs() < 1e-8 {
         return fist_py;

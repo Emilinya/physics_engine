@@ -10,7 +10,8 @@ use crate::{Energy, EnergyFile};
 use crate::physics::gravity::gravitational_potential_energy;
 use crate::physics::spring::spring_potential_energy;
 
-use std::{fs::OpenOptions, io::Write};
+use fs_err::OpenOptions;
+use std::io::Write;
 
 pub fn calculate_total_energy(
     timer: Res<Time>,
@@ -54,6 +55,6 @@ pub fn calculate_total_energy(
             timer.elapsed_secs_f64(),
             total_energy
         )
-        .expect("energy file should exist");
+        .expect("energy file should be writable");
     }
 }

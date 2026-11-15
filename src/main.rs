@@ -14,12 +14,12 @@ use physics::PhysicsPlugin;
 use scenes::{GameScene, ScenePlugin};
 
 use std::ffi::OsString;
-use std::fs::File;
 
 use bevy::log::{Level, LogPlugin};
 use bevy::prelude::*;
 use bevy::window::{MonitorSelection, PrimaryWindow, WindowPosition, WindowResolution};
 use clap::Parser;
+use fs_err::File;
 
 #[derive(Resource, Default)]
 struct Energy(f64);
@@ -85,16 +85,14 @@ struct Args {
     energy_file: Option<OsString>,
 }
 
-fn main() {
+fn main() -> Result<(), BevyError> {
     let args = Args::parse();
 
-    if let Some(file) = &args.energy_file
-        && let Err(err) = File::create(file)
-    {
-        panic!("Failed to create energy file: {err}");
+    if let Some(file) = &args.energy_file {
+        File::create(file)?;
     }
 
-    App::new()
+    let result = App::new()
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -131,4 +129,12 @@ fn main() {
         .add_systems(Startup, add_camera)
         .add_systems(PreUpdate, (update_window_size, update_mouse_position))
         .run();
+
+    match result {
+        AppExit::Error(code) => Err(BevyError::error(format!(
+            "Got non-sucess exit status: {}",
+            code
+        ))),
+        AppExit::Success => Ok(()),
+    }
 }

@@ -2,20 +2,32 @@ name: Tests
 on: [push]
 env:
   CARGO_TERM_COLOR: always
+permissions: {}
+
 jobs:
   Format:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
+        with:
+          persist-credentials: false
       - run: VERBOSE=1 make format
       - run: git diff --exit-code
   Check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@v1
+      - uses: actions/checkout@v4.4.0
+        with:
+          persist-credentials: false
+      - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
           packages: libasound2-dev libudev-dev libwayland-dev
           version: 1.0
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.3
       - run: VERBOSE=1 make ci

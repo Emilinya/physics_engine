@@ -268,7 +268,7 @@ pub trait ShapeImpl {
             let self_projection = ShapeProjection::project_vertices(&self_vertices, tangent);
             let other_projection = ShapeProjection::project_vertices(&other_vertices, tangent);
 
-            let overlap = self_projection.overlap(&other_projection);
+            let overlap = self_projection.overlap(other_projection);
             if overlap < 0.0 {
                 return None;
             }
@@ -332,7 +332,7 @@ pub fn check_vertices(vertices: &[Vec2]) {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use std::f64::consts::PI;
 
     use crate::assert_close;
@@ -398,7 +398,7 @@ mod test {
                 DVec2::new(0.27, 0.28),
                 Some(CollisionData::new(
                     0.876_761_44,
-                    Vec2::new(-0.93499696, 0.35465577),
+                    Vec2::new(-0.934_996_96, 0.354_655_77),
                 )),
             ),
         ] {

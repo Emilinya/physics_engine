@@ -51,7 +51,7 @@ impl<'a, 'w, 's> Spawner<'a, 'w, 's> {
     pub fn with_sprite<'path>(
         self,
         path: impl Into<AssetPath<'path>>,
-        asset_server: &Res<AssetServer>,
+        asset_server: Res<AssetServer>,
     ) -> Self {
         self.commands.entity(self.entity).insert(Sprite {
             image: asset_server.load(path),

@@ -277,7 +277,7 @@ impl ShapeImpl for Circle {
                 };
                 let other_projection = ShapeProjection::project_vertices(&other_vertices, tangent);
 
-                let overlap = self_projection.overlap(&other_projection);
+                let overlap = self_projection.overlap(other_projection);
                 if overlap < 0.0 {
                     return None;
                 }
@@ -350,7 +350,7 @@ mod tests {
                 DVec2::new(-0.13, 0.12),
                 Some(CollisionData::new(
                     0.199_056_25,
-                    Vec2::new(-0.6857814, 0.7278076),
+                    Vec2::new(-0.685_781_4, 0.727_807_6),
                 )),
             ),
             (

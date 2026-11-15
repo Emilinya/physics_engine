@@ -42,7 +42,7 @@ impl Integrator for Integrators {
             Self::Euler => EulerStep.build(app, apply_forces),
             Self::EulerChromer => EulerChromerStep.build(app, apply_forces),
             Self::VelocityVerlet => VelocityVerletStep.build(app, apply_forces),
-        };
+        }
     }
 }
 

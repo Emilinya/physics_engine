@@ -40,7 +40,7 @@ pub fn spring_pendulum_setup(
                 0.1,
                 0.5,
                 0.5,
-                DVec2::new(i as f64 + 1.0, 2.0),
+                DVec2::new(f64::from(i) + 1.0, 2.0),
             ))
             .with_shape(Shape::Square, &mut meshes)
             .with_color(Color::srgb_u8(10, 10, 200), &mut materials)

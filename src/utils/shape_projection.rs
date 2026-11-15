@@ -59,7 +59,7 @@ impl ShapeProjection {
     }
 
     #[inline]
-    pub fn overlap(&self, other: &Self) -> f32 {
+    pub fn overlap(self, other: Self) -> f32 {
         -f32::max(other.min - self.max, self.min - other.max)
     }
 }

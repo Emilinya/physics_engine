@@ -14,10 +14,10 @@ pub struct NGon<const N: u8>;
 impl<const N: u8> ShapeImpl for NGon<N> {
     fn get_vertices(&self) -> Vec<[f32; 2]> {
         let mut vertices = Vec::with_capacity(N as usize);
-        let delta_angle = (2.0 * PI) / N as f32;
+        let delta_angle = (2.0 * PI) / f32::from(N);
         for i in 0..N {
             // Subtract angle by pi/2 so it is rotated correctly
-            let angle = delta_angle * (i as f32) + PI / 2.0;
+            let angle = delta_angle * f32::from(i) + PI / 2.0;
             let (sin, cos) = angle.sin_cos();
             vertices.push([0.5 * cos, 0.5 * sin]);
         }
@@ -31,8 +31,8 @@ impl<const N: u8> ShapeImpl for NGon<N> {
         let mut indices = Vec::with_capacity(3 * ((N - 2) as usize));
         for i in 0..(N - 2) {
             indices.push(0);
-            indices.push(i as u16 + 1);
-            indices.push(i as u16 + 2);
+            indices.push(u16::from(i) + 1);
+            indices.push(u16::from(i) + 2);
         }
         self.get_incomplete_mesh()
             .with_inserted_indices(Indices::U16(indices))

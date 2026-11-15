@@ -66,7 +66,7 @@ pub fn collision_potential_energy(
     for collision_data_lists in collision_data_map.values() {
         for collision_data in collision_data_lists {
             let energy = 0.5 * COLLISION_STRENGTH * collision_data.depth.powi(2);
-            total_collision_energy += energy as f64;
+            total_collision_energy += f64::from(energy);
         }
     }
 

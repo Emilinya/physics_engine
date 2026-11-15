@@ -153,7 +153,7 @@ fn shapes_setup(
                     width: 0.5 * size,
                     height: 0.5 * size,
                 },
-                Position(DVec2::new(-1.0 + 2.0 * i as f64, -1.0)),
+                Position(DVec2::new(-1.0 + 2.0 * f64::from(i), -1.0)),
             ))
             .with_shape(Shape::Circle, &mut meshes)
             .with_color(Color::from(colors[0]), &mut materials);
